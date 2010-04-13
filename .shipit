@@ -1,0 +1,6 @@
+steps = FindVersion, ChangeVersion, CheckChangeLog, DistTest, Commit, Tag, MakeDist
+git.tagpattern = release-%v
+git.push_to = release
+
+CheckChangeLog.files = Changes
+MakeDist.destination = ~/code/distribs/
