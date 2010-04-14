@@ -104,7 +104,7 @@ sub delete {
     }
 
     my $lkey = $queue_name . ':queue';
-    $self->application->redis->delete(
+    $self->application->redis->del(
         $lkey,
         sub {
             my $res = shift;
