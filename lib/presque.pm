@@ -25,11 +25,10 @@ has redis => (
     lazy    => 1,
     default => sub {
         my $self = shift;
-        my $r    = AnyEvent::Redis->new(
+        AnyEvent::Redis->new(
             host => $self->config->{redis}->{host},
             port => $self->config->{redis}->{port}
         );
-        $r;
     }
 );
 
@@ -88,6 +87,10 @@ all the queues.
 =item B<GET /j/queuename>
 
 return some basic information about a queue.
+
+=item B<GET /control/queuename>
+
+=item B<POST /control/queuename>
 
 =back
 

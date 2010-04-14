@@ -9,6 +9,7 @@ extends 'presque::worker';
 sub work {
     my ($self, $job) = @_;
     say "job's done";
+    ...; # yadda yadda!
     return;
 }
 

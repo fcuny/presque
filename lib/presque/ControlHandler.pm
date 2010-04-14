@@ -11,7 +11,7 @@ before [qw/get post/] => sub {
 
 sub get {
     my ( $self, $queue_name ) = @_;
-    
+
     if ( !$queue_name ) {
         $self->response->code(404);
         $self->finish("queue name is missing");
@@ -81,6 +81,8 @@ __END__
 presque::ControlHandler - a redis based message queue
 
 =head1 DESCRIPTION
+
+=head1 METHODS
 
 =head1 AUTHOR
 

@@ -1,7 +1,24 @@
 <html>
+
    <head>
-      <title>Presque - a redis based message queue</title>
+      <title>Presque - a redis/tatsumaki based message queue</title>
+      <script src="http://code.jquery.com/jquery-1.4.2.min.js"></script>
+      <script type="text/javascript" language="javascript">
+        $(document).ready(function() {
+            $.getJSON('/stats/', function(stats) {
+                $("#stats").append('<span>server:'+stats.redis+'</span><br />').append('<span>queues total: '+stats.size+'</span>');
+                for(i=0;i<stats.queues.length;i++) {
+                    $("#queues").append('<tr><td>'+stats.queues[i]+'</td></tr>');
+                }
+            })
+        })
+      </script>
    </head>
+
    <body>
+     <h1>Presque - a redis/tatsumaki based message queue</h1>
+     <div id="stats"></div>
+     <ul id="queues"></ul>
    </body>
+
  </html>
