@@ -9,7 +9,7 @@ sub get {
 
     if (!$queue_name) {
         $self->response->code(404);
-        $self->response->body("queue name is missing");
+        $self->finish("queue name is missing");
         return;
     }
 
