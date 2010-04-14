@@ -1,0 +1,21 @@
+% my $queue = $_[0]->{queue};
+% my $jobs = $_[0]->{jobs};
+% my $job_count = $_[0]->{job_count};
+% my $queue_size = $_[0]->{queue_size};
+
+<html>
+   <head>
+      <title>jobs in queue <%= $queue  %></title>
+   </head>
+   <body>
+        queue name: <%= $queue %><br>
+        queue objects: <%=  $queue_size %><br>
+        job count: <%= $job_count %><br>
+    <p>latest 10 jobs</p>
+     <ul>
+       <% for my $job (@$jobs) { %>
+         <li><%= $job %></li>
+       <% } %>
+     </ul>
+   </body>
+ </html>
