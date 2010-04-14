@@ -66,30 +66,26 @@ The following HTTP routes are available:
 
 =over 4
 
-=item
-
-    GET /q/queuename
+=item B<GET /q/queuename>
 
 gets an object out of the queue
 
-=item
-
-    POST /q/queuename
+=item B<POST /q/queuename>
 
 insert an object in the queue
 
-=item
-
-    DELETE /q/queuename
+=item B<DELETE /q/queuename>
 
 purge and delete the queue
 
-=item
-
-    GET /stats/[queuename]
+=item B<GET /stats/[queuename]>
 
 return some statues about the queue. If no queue is given, return basic statues about
 all the queues.
+
+=item B<GET /j/queuename>
+
+return some basic information about a queue.
 
 =back
 
@@ -101,6 +97,14 @@ must be a valid JSON object.
     curl -H 'Content-Type: application/json' -X POST "http://localhost:5002/q/foo" -d '{"key":"value"}'
 
 =head2 FETCH A JOB
+
+Return a JSON object
+
+   curl http://localhost:5002/q/foo
+
+=head2 PURGE AND DELETE A QUEUE
+
+   curl -X DELETE http://localhost:5002/q/foo
 
 =head1 AUTHOR
 
