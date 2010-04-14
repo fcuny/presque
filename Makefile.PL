@@ -3,7 +3,9 @@ name 'presque';
 all_from 'lib/presque.pm';
 readme_from 'lib/presque.pm';
 
-# requires '';
+requires 'Tatsumaki';
+requires 'Moose';
+requires 'AnyEvent::Redis';
 
 tests 't/*.t';
 
