@@ -6,7 +6,15 @@ __PACKAGE__->asynchronous(1);
 
 sub get {
     my ( $self, $queue_name ) = @_;
+
+    if (!$queue_name) {
+        $self->response->code(404);
+        $self->response->body("queue name is missing");
+        return;
+    }
+
     my $key = $queue_name . ':queue';
+
     $self->application->redis->lrange(
         $key, 0, 9,
         sub {
@@ -45,6 +53,8 @@ __END__
 presque::IndexHandler - a redis based message queue
 
 =head1 DESCRIPTION
+
+Return some informations about a queue.
 
 =head1 AUTHOR
 
