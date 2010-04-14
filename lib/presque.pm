@@ -9,18 +9,25 @@ use AnyEvent::Redis;
 use presque::RestQueueHandler;
 use presque::JobQueueHandler;
 use presque::IndexHandler;
+use presque::StatusHandler;
 
 has config => (
-    is => 'rw', isa => 'HashRef', lazy => 1, default => sub {}
+    is      => 'rw',
+    isa     => 'HashRef',
+    lazy    => 1,
+    default => sub { }
 );
 
 has redis => (
-    is => 'rw',
-    isa => 'Object',
-    lazy => 1,
+    is      => 'rw',
+    isa     => 'Object',
+    lazy    => 1,
     default => sub {
         my $self = shift;
-        my $r = AnyEvent::Redis->new();
+        my $r    = AnyEvent::Redis->new(
+            host => $self->config->{redis}->{host},
+            port => $self->config->{redis}->{port}
+        );
         $r;
     }
 );
@@ -29,9 +36,10 @@ sub app {
     my ( $class, %args ) = @_;
     my $self = $class->new(
         [
-            '/q/(.*)' => 'presque::RestQueueHandler',
-            '/j/(.*)' => 'presque::JobQueueHandler',
-            '/'   => 'presque::IndexHandler',
+            '/q/(.*)'     => 'presque::RestQueueHandler',
+            '/j/(.*)'     => 'presque::JobQueueHandler',
+            '/stats/(.*)' => 'presque::StatusHandler',
+            '/'           => 'presque::IndexHandler',
         ]
     );
     $self->config( delete $args{config} );
@@ -43,15 +51,56 @@ __END__
 
 =head1 NAME
 
-presque -
+presque - a redis based message queue
 
 =head1 SYNOPSIS
 
-  use presque;
-
 =head1 DESCRIPTION
 
-presque is
+presque is a message queue system based on Tatsumaki and Redis.
+
+It's functionality are inspired by L<RestMQ|http://github.com/gleicon/restmq>
+and the name by L<resque|http://github.com/defunkt/resque>.
+
+The following HTTP routes are available:
+
+=over 4
+
+=item
+
+    GET /q/queuename
+
+gets an object out of the queue
+
+=item
+
+    POST /q/queuename
+
+insert an object in the queue
+
+=item
+
+    DELETE /q/queuename
+
+purge and delete the queue
+
+=item
+
+    GET /stats/[queuename]
+
+return some statues about the queue. If no queue is given, return basic statues about
+all the queues.
+
+=back
+
+=head2 INSERT A JOB
+
+The B<Content-Type> of the request must be set to B<application/json>. The body of the request
+must be a valid JSON object.
+
+    curl -H 'Content-Type: application/json' -X POST "http://localhost:5002/q/foo" -d '{"key":"value"}'
+
+=head2 FETCH A JOB
 
 =head1 AUTHOR
 
@@ -60,6 +109,10 @@ franck cuny E<lt>franck@lumberjaph.netE<gt>
 =head1 SEE ALSO
 
 =head1 LICENSE
+
+Copyright 2010 by Linkfluence
+
+L<http://linkfluence.net>
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
