@@ -4,12 +4,17 @@ use Moose;
 extends 'Tatsumaki::Handler';
 __PACKAGE__->asynchronous(1);
 
+before [qw/get/] => sub {
+    my $self = shift;
+    $self->response->header('Content-Type' => 'application/json');
+};
+
 sub get {
     my ( $self, $queue_name ) = @_;
 
     if (!$queue_name) {
         $self->response->code(404);
-        $self->finish("queue name is missing");
+        $self->finish({error => 'queue name is missing'});
         return;
     }
 
@@ -28,15 +33,13 @@ sub get {
                         $lkey,
                         sub {
                             my $total = shift;
-                            $self->render(
-                                'job.html',
-                                {
-                                    queue      => $queue_name,
-                                    jobs       => $jobs,
-                                    job_count  => $size,
-                                    queue_size => scalar @$total
-                                }
-                            );
+                            my $stats = {
+                                queue      => $queue_name,
+                                jobs       => $jobs,
+                                job_count  => $size,
+                                queue_size => scalar @$total
+                            };
+                            $self->finish(JSON::encode_json $stats);
                         }
                     );
                 }
