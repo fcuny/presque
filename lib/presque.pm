@@ -36,11 +36,11 @@ sub app {
     my ( $class, %args ) = @_;
     my $self = $class->new(
         [
-            '/q/(.*)'       => 'presque::RestQueueHandler',
-            '/j/(.*)'       => 'presque::JobQueueHandler',
-            '/stats/(.*)'   => 'presque::StatusHandler',
-            '/control/(.*)' => 'presque::ControlHandler',
-            '/'             => 'presque::IndexHandler',
+            '/q/([^/]+)(?:/)?(.*)' => 'presque::RestQueueHandler',
+            '/j/(.*)'              => 'presque::JobQueueHandler',
+            '/stats/(.*)'          => 'presque::StatusHandler',
+            '/control/(.*)'        => 'presque::ControlHandler',
+            '/'                    => 'presque::IndexHandler',
         ]
     );
     $self->config( delete $args{config} );
