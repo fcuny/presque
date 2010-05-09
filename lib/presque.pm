@@ -89,7 +89,11 @@ return some basic information about a queue.
 
 =item B<GET /control/queuename>
 
+return the status of the queue. A queue have two statues: open or closed. When a queue is closed, no job can be extracted from the queue.
+
 =item B<POST /control/queuename>
+
+change the status of the queue.
 
 =back
 
@@ -99,6 +103,12 @@ The B<Content-Type> of the request must be set to B<application/json>. The body 
 must be a valid JSON object.
 
     curl -H 'Content-Type: application/json' -X POST "http://localhost:5002/q/foo" -d '{"key":"value"}'
+
+It's possible to create delayed jobs (eg: job that will not be run before a defined time in the futur).
+
+    curl -H 'Content-Type: application/json' -X POST "http://localhost:5002/q/foo?delayed="$(expr `date +%s` + 500) -d '{"key":"value"}'
+
+the B<delayed> value should be a date in epoch
 
 =head2 FETCH A JOB
 
