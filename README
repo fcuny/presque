@@ -1,17 +1,70 @@
 NAME
-    presque -
+    presque - a redis based message queue
 
 SYNOPSIS
-      use presque;
-
 DESCRIPTION
-    presque is
+    presque is a message queue system based on Tatsumaki and Redis.
+
+    It's functionality are inspired by RestMQ
+    <http://github.com/gleicon/restmq> and the name by resque
+    <http://github.com/defunkt/resque>.
+
+    The following HTTP routes are available:
+
+    GET /q/queuename
+        gets an object out of the queue
+
+    POST /q/queuename
+        insert an object in the queue
+
+    DELETE /q/queuename
+        purge and delete the queue
+
+    GET /stats/[queuename]
+        return some statues about the queue. If no queue is given, return
+        basic statues about all the queues.
+
+    GET /j/queuename
+        return some basic information about a queue.
+
+    GET /control/queuename
+        return the status of the queue. A queue have two statues: open or
+        closed. When a queue is closed, no job can be extracted from the
+        queue.
+
+    POST /control/queuename
+        change the status of the queue.
+
+  INSERT A JOB
+    The Content-Type of the request must be set to application/json. The
+    body of the request must be a valid JSON object.
+
+        curl -H 'Content-Type: application/json' -X POST "http://localhost:5002/q/foo" -d '{"key":"value"}'
+
+    It's possible to create delayed jobs (eg: job that will not be run
+    before a defined time in the futur).
+
+        curl -H 'Content-Type: application/json' -X POST "http://localhost:5002/q/foo?delayed="$(expr `date +%s` + 500) -d '{"key":"value"}'
+
+    the delayed value should be a date in epoch
+
+  FETCH A JOB
+    Return a JSON object
+
+       curl http://localhost:5002/q/foo
+
+  PURGE AND DELETE A QUEUE
+       curl -X DELETE http://localhost:5002/q/foo
 
 AUTHOR
     franck cuny <franck@lumberjaph.net>
 
 SEE ALSO
 LICENSE
+    Copyright 2010 by Linkfluence
+
+    <http://linkfluence.net>
+
     This library is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself.
 
