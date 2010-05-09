@@ -2,23 +2,15 @@ package presque::ControlHandler;
 
 use Moose;
 extends 'Tatsumaki::Handler';
-with qw/presque::Role::QueueName/;
+with
+  qw/presque::Role::QueueName presque::Role::Error presque::Role::Response/;
 
 __PACKAGE__->asynchronous(1);
-
-before [qw/get post/] => sub {
-    my $self = shift;
-    $self->response->header('Content-Type' => 'application/json');
-};
 
 sub get {
     my ( $self, $queue_name ) = @_;
 
-    if ( !$queue_name ) {
-        $self->response->code(404);
-        $self->finish("queue name is missing");
-        return;
-    }
+    return $self->http_error_queue if !$queue_name;
 
     my $key = $self->_queue_stat($queue_name);
     $self->application->redis->get(
@@ -39,11 +31,7 @@ sub get {
 sub post {
     my ( $self, $queue_name ) = @_;
 
-    if ( !$queue_name ) {
-        $self->response->code(404);
-        $self->finish("queue name is missing");
-        return;
-    }
+    return $self->http_error_queue if !$queue_name;
 
     my $content = JSON::decode_json( $self->request->input );
     if ( $content->{status} eq 'start' ) {
@@ -64,6 +52,7 @@ sub post {
 
 sub _set_status {
     my ( $self, $queue_name, $status ) = @_;
+
     my $key = $self->_queue_stat($queue_name);
 
     $self->application->redis->set(

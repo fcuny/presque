@@ -2,23 +2,15 @@ package presque::JobQueueHandler;
 
 use Moose;
 extends 'Tatsumaki::Handler';
-with qw/presque::Role::QueueName/;
+with
+  qw/presque::Role::QueueName presque::Role::Error presque::Role::Response/;
 
 __PACKAGE__->asynchronous(1);
-
-before [qw/get/] => sub {
-    my $self = shift;
-    $self->response->header('Content-Type' => 'application/json');
-};
 
 sub get {
     my ( $self, $queue_name ) = @_;
 
-    if (!$queue_name) {
-        $self->response->code(404);
-        $self->finish({error => 'queue name is missing'});
-        return;
-    }
+    $self->http_error_queue if (!$queue_name);
 
     my $key = $self->_queue($queue_name);
 

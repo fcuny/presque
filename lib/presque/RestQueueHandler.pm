@@ -1,26 +1,17 @@
 package presque::RestQueueHandler;
 
+use JSON;
 use Moose;
 extends 'Tatsumaki::Handler';
-with 'presque::Role::QueueName';
+with
+  qw/presque::Role::QueueName presque::Role::Error presque::Role::Response/;
 
 __PACKAGE__->asynchronous(1);
-
-use JSON;
-
-before [qw/get post/] => sub {
-    my $self = shift;
-    $self->response->header('Content-Type' => 'application/json');
-};
 
 sub get {
     my ( $self, $queue_name ) = @_;
 
-    if ( !$queue_name ) {
-        $self->finish(
-            JSON::encode_json( { error => 'queue name is missing' } ) );
-        return;
-    }
+    return $self->http_error_queue if ( !$queue_name );
 
     my $dkey = $self->_queue_delayed($queue_name);
     my $lkey = $self->_queue($queue_name);
@@ -58,9 +49,7 @@ sub get {
                             );
                         }
                         else {
-                            $self->response->code(404);
-                            $self->finish(
-                                JSON::encode_json( { error => "no job" } ) );
+                            $self->http_error('no job', 404);
                         }
                     }
                 );
@@ -72,20 +61,11 @@ sub get {
 sub post {
     my ( $self, $queue_name ) = @_;
 
-    if ( !$queue_name ) {
-        $self->finish(
-            JSON::encode_json( { error => 'queue name is missing' } ) );
-        return;
-    }
+    return $self->http_error_queue if ( !$queue_name );
 
-    if ( $self->request->header('Content-Type') ne 'application/json' ) {
-        $self->finish(
-            JSON::encode_json(
-                { error => 'content-type must be application/json' }
-            )
-        );
-        return;
-    }
+    return $self->http_error_content_type
+      if (!$self->request->header('Content-Type')
+        || $self->request->header('Content-Type') ne 'application/json' );
 
     my $input = $self->request->parameters;
     my $delayed = $input->{delayed};
@@ -128,11 +108,7 @@ sub post {
 sub delete {
     my ( $self, $queue_name ) = @_;
 
-    if ( !$queue_name ) {
-        $self->finish(
-            JSON::encode_json( { error => 'queue name is missing' } ) );
-        return;
-    }
+    return $self->http_error_queue if ( !$queue_name );
 
     # delete delayed queue
     my $lkey = $self->_queue($queue_name);
