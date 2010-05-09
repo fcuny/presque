@@ -2,6 +2,8 @@ package presque::StatusHandler;
 
 use Moose;
 extends 'Tatsumaki::Handler';
+with qw/presque::Role::QueueName/;
+
 __PACKAGE__->asynchronous(1);
 
 use JSON;
@@ -14,13 +16,11 @@ before [qw/get/] => sub {
 sub get {
     my ( $self, $queue_name ) = @_;
 
-    $self->response->header( 'Content-Type' => 'application/json' );
-
     my $conf = $self->application->config->{redis};
     my $stats = { redis => $conf->{host} . ':' . $conf->{port}, };
 
     if ($queue_name) {
-        my $key = $queue_name . ":queue";
+        my $key = $self->_queue($queue_name);
         $self->application->redis->llen(
             $key,
             sub {

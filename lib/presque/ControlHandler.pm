@@ -2,6 +2,8 @@ package presque::ControlHandler;
 
 use Moose;
 extends 'Tatsumaki::Handler';
+with qw/presque::Role::QueueName/;
+
 __PACKAGE__->asynchronous(1);
 
 before [qw/get post/] => sub {
@@ -18,14 +20,16 @@ sub get {
         return;
     }
 
-    my $key = 'queuestat:' . $queue_name;
+    my $key = $self->_queue_stat($queue_name);
     $self->application->redis->get(
         $key,
         sub {
             my $status = shift;
             $self->finish(
-                JSON::encode_json(
-                    { queue => $queue_name, status => $status }
+                JSON::encode_json( {
+                        queue  => $queue_name,
+                        status => $status
+                    }
                 )
             );
         }
@@ -60,14 +64,18 @@ sub post {
 
 sub _set_status {
     my ( $self, $queue_name, $status ) = @_;
-    my $key = 'queuestat:' . $queue_name;
+    my $key = $self->_queue_stat($queue_name);
 
     $self->application->redis->set(
         $key, 0,
         sub {
             my $res = shift;
             $self->finish(
-                JSON::encode_json( { queue => $queue_name, status => $res } )
+                JSON::encode_json( {
+                        queue  => $queue_name,
+                        status => $res
+                    }
+                )
             );
         }
     );

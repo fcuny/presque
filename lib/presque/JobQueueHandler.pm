@@ -2,6 +2,8 @@ package presque::JobQueueHandler;
 
 use Moose;
 extends 'Tatsumaki::Handler';
+with qw/presque::Role::QueueName/;
+
 __PACKAGE__->asynchronous(1);
 
 before [qw/get/] => sub {
@@ -18,7 +20,7 @@ sub get {
         return;
     }
 
-    my $key = $queue_name . ':queue';
+    my $key = $self->_queue($queue_name);
 
     $self->application->redis->lrange(
         $key, 0, 9,
