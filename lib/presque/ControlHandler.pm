@@ -12,9 +12,8 @@ sub get {
 
     return $self->http_error_queue if !$queue_name;
 
-    my $key = $self->_queue_stat($queue_name);
     $self->application->redis->get(
-        $key,
+        $self->_queue_stat($queue_name),
         sub {
             my $status = shift;
             $self->finish(
@@ -33,7 +32,7 @@ sub post {
 
     return $self->http_error_queue if !$queue_name;
 
-    my $content = JSON::decode_json( $self->request->input );
+    my $content = JSON::decode_json( $self->request->content );
     if ( $content->{status} eq 'start' ) {
         $self->_set_status( $queue_name, 1 );
     }
@@ -41,12 +40,7 @@ sub post {
         $self->_set_status( $queue_name, 0 );
     }
     else {
-        $self->response->code(400);
-        $self->finish(
-            JSON::encode_json(
-                { error => 'invalid status ' . $content->{status} }
-            )
-        );
+        $self->http_error('invalid status '.$content->{status});
     }
 }
 
@@ -61,8 +55,8 @@ sub _set_status {
             my $res = shift;
             $self->finish(
                 JSON::encode_json( {
-                        queue  => $queue_name,
-                        status => $res
+                        queue    => $queue_name,
+                        response => $res
                     }
                 )
             );

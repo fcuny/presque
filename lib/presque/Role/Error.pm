@@ -9,13 +9,15 @@ sub http_error {
 }
 
 sub http_error_queue {
-    my $self = shift;
-    $self->http_error( 'queue name is missing', 404 );
+    (shift)->http_error( 'queue name is missing', 404 );
 }
 
 sub http_error_content_type {
-    my $self = shift;
-    $self->http_error('content-type must be set to application/json');
+    (shift)->http_error('content-type must be set to application/json');
+}
+
+sub http_error_closed_queue {
+    (shift)->http_error('queue is closed', 404);
 }
 
 1;

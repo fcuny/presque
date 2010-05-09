@@ -11,49 +11,60 @@ __PACKAGE__->asynchronous(1);
 sub get {
     my ( $self, $queue_name ) = @_;
 
-    return $self->http_error_queue if ( !$queue_name );
+    return $self->http_error_queue if !$queue_name;
 
     my $dkey = $self->_queue_delayed($queue_name);
     my $lkey = $self->_queue($queue_name);
 
-    $self->application->redis->zrangebyscore(
-        $dkey, 0, time,
+    $self->application->redis->get(
+        $self->_queue_stat($queue_name),
         sub {
-            my $value = shift;
-            if ( $value && scalar @$value ) {
-                my $k = shift @$value;
-                $self->application->redis->zrem(
-                    $dkey, $k,
-                    sub {
-                        $self->application->redis->get(
-                            $k,
+            my $status = shift;
+
+            if ( defined $status && $status == 0 ) {
+                return $self->http_error_closed_queue();
+            }
+
+            $self->application->redis->zrangebyscore(
+                $dkey, 0, time,
+                sub {
+                    my $value = shift;
+                    if ( $value && scalar @$value ) {
+                        my $k = shift @$value;
+                        $self->application->redis->zrem(
+                            $dkey, $k,
                             sub {
-                                $self->finish(shift);
+                                $self->application->redis->get(
+                                    $k,
+                                    sub {
+                                        $self->finish(shift);
+                                    }
+                                );
                             }
                         );
                     }
-                );
-            }
-            else {
-                $self->application->redis->lpop(
-                    $lkey,
-                    sub {
-                        my $value = shift;
-                        my $qpkey = $self->_queue_policy($queue_name);
-                        if ($value) {
-                            $self->application->redis->get(
-                                $value,
-                                sub {
-                                    $self->finish(shift);
+                    else {
+                        $self->application->redis->lpop(
+                            $lkey,
+                            sub {
+                                my $value = shift;
+                                my $qpkey = $self->_queue_policy($queue_name);
+                                if ($value) {
+                                    $self->application->redis->get(
+                                        $value,
+                                        sub {
+                                            $self->finish(shift);
+                                        }
+                                    );
                                 }
-                            );
-                        }
-                        else {
-                            $self->http_error('no job', 404);
-                        }
+                                else {
+                                    $self->http_error( 'no job', 404 );
+                                }
+                            }
+                        );
                     }
-                );
-            }
+                }
+            );
         }
     );
 }
