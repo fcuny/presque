@@ -32,4 +32,9 @@ sub _queue_stat {
     return 'queuestat:'.$queue_name;
 }
 
+sub _queue_worker {
+    my ($self, $worker_name) = @_;
+    return 'worker:'.$worker_name;
+}
+
 1;
