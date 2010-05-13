@@ -1,5 +1,6 @@
 package presque::ControlHandler;
 
+use JSON;
 use Moose;
 extends 'Tatsumaki::Handler';
 with
