@@ -1,23 +1,12 @@
 package presque;
 
-use Moose;
 our $VERSION = '0.01';
-extends 'Tatsumaki::Application';
 
 use AnyEvent::Redis;
+use Moose;
+extends 'Tatsumaki::Application';
 
-use presque::RestQueueHandler;
-use presque::JobQueueHandler;
-use presque::IndexHandler;
-use presque::StatusHandler;
-use presque::ControlHandler;
-
-has config => (
-    is      => 'rw',
-    isa     => 'HashRef',
-    lazy    => 1,
-    default => sub { }
-);
+has config => (is => 'rw', isa => 'HashRef', lazy => 1, default => sub { });
 
 has redis => (
     is      => 'rw',
@@ -32,17 +21,25 @@ has redis => (
     }
 );
 
+sub h {
+    my $class = shift;
+    eval "require $class" or die $@;
+    $class;
+}
+
 sub app {
-    my ( $class, %args ) = @_;
-    my $self = $class->new( [
-            '/q/(.*)'       => 'presque::RestQueueHandler',
-            '/j/(.*)'       => 'presque::JobQueueHandler',
-            '/stats/(.*)'   => 'presque::StatusHandler',
-            '/control/(.*)' => 'presque::ControlHandler',
-            '/'             => 'presque::IndexHandler',
+    my ($class, %args) = @_;
+    my $self = $class->new(
+        [   '/q/(.*)'       => h('presque::RestQueueHandler'),
+            '/j/(.*)'       => h('presque::JobQueueHandler'),
+            '/w/(.*)'       => h('presque::WorkerHandler'),
+            '/stats/(.*)'   => h('presque::StatusHandler'),
+            '/control/(.*)' => h('presque::ControlHandler'),
+            '/'             => h('presque::IndexHandler'),
         ]
     );
-    $self->config( delete $args{config} );
+
+    $self->config(delete $args{config});
     $self;
 }
 
@@ -59,8 +56,7 @@ presque - a redis based message queue
 
 presque is a message queue system based on Tatsumaki and Redis.
 
-It's functionality are inspired by L<RestMQ|http://github.com/gleicon/restmq>
-and the name by L<resque|http://github.com/defunkt/resque>.
+The functionalities are inspired by L<RestMQ|http://github.com/gleicon/restmq> and the name by L<resque|http://github.com/defunkt/resque>.
 
 The following HTTP routes are available:
 
