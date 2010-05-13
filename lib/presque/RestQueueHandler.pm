@@ -153,7 +153,7 @@ sub _finish_post {
     }
 
     $self->application->redis->$method(@args,);
-    $self->response->code(204);
+    $self->response->code(201);
     $self->finish();
 }
 
