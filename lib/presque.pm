@@ -70,14 +70,17 @@ gets an object out of the queue
 
 insert an object in the queue
 
+=item B<PUT /q/queuename>
+
+re-insert a job after a worker failed to process the job
+
 =item B<DELETE /q/queuename>
 
 purge and delete the queue
 
-=item B<GET /stats/[queuename]>
+=item B<GET /status/(queuename)>
 
-return some statues about the queue. If no queue is given, return basic statues about
-all the queues.
+If no queuename is given, return a list of queues. If queuename is given, return the size of the queue and the current policy.
 
 =item B<GET /j/queuename>
 
@@ -91,12 +94,60 @@ return the status of the queue. A queue have two statues: open or closed. When a
 
 change the status of the queue.
 
+=item B<GET /w/(?[worker_id|queue_name])>
+
+If no argument is given, return some stats about workers. If a worker_id is given, return stats about the specific worker. If a queue name is given return stats about the workers on this queue.
+
+=item B<POST /w/queue_name?worker_id>
+
+register a worker on a queue.
+
+=item B<DELETE /w/queue_name?worker_id>
+
+unregister a worker on a queue.
+
 =back
 
-=head2 INSERT A JOB
+=head1 USAGE
 
-The B<Content-Type> of the request must be set to B<application/json>. The body of the request
-must be a valid JSON object.
+=head2 WORKERS INTERFACE
+
+It's possible for a worker to register itself against presque. This is not required. The main purpose of registering workers is to collect informations about your workers : what are they doing right now, how many jobs have they failed, how many jobs have they processed, ...
+
+=head3 REGISTER A WORKER
+
+To register a worker, a POST request must be made. The content of the POST must be a JSON structure that contains the key B<worker_id>.
+
+    curl -H 'Content-Type: appplication/json' http://localhost:5000/w/foo -d '{"worker_id":"myworker_1"}
+
+The HTTP response is 201, and no content is returned.
+
+=head3 STATISTICS
+
+When a worker is registered, statistics about this worker are collected.
+
+    curl "http://localhost:5000/w/?worker_id=myworker_1" | json_xs -f json -t json-pretty
+
+    {
+        "worker_id" : "myworker_1",
+        "started_at" : 1273923534,
+        "processed" : "0",
+        "failed" : "0"
+    }
+
+=head3 UNREGISTER A WORKER
+
+When a worker has finished to work, it should unregister itself:
+
+    curl -X DELETE "http://localhost:5000/w/foo?worker_id=myworker_1"
+
+The response HTTP code is 204, and no content is returned.
+
+=head2 JOB INTERFACE
+
+=head3 INSERT A JOB
+
+The B<Content-Type> of the request must be set to B<application/json>. The body of the request must be a valid JSON object.
 
     curl -H 'Content-Type: application/json' -X POST "http://localhost:5002/q/foo" -d '{"key":"value"}'
 
@@ -106,15 +157,37 @@ It's possible to create delayed jobs (eg: job that will not be run before a defi
 
 the B<delayed> value should be a date in epoch
 
-=head2 FETCH A JOB
+=head3 FETCH A JOB
 
 Return a JSON object
 
    curl http://localhost:5002/q/foo
 
-=head2 PURGE AND DELETE A QUEUE
+=head3 PURGE AND DELETE A QUEUE
 
    curl -X DELETE http://localhost:5002/q/foo
+
+=head2 CHANGE THE POLICY OF A QUEUE
+
+By default, when a queue is created, the status is set to 'open'. When a queue is set to 'stop', no job will be fetched from the queue.
+
+To stop a queue:
+
+    curl -X POST -H 'Content-Type: application/json' -d '{"status":"stop"}' http://localhost:5000/control/foo
+
+    {"response":"updated","queue":"foo"}
+
+To re-open a queue:
+
+    curl -X POST -H 'Content-Type: application/json' -d '{"status":"start"}' http://localhost:5000/control/foo
+
+To fetch the status of a queue:
+
+    curl http://localhost:5000/control/foo
+
+    {"status":"0","queue":"foo"}
+
+=head2 GET SOME STATUS ABOUT A QUEUE
 
 =head1 AUTHOR
 
