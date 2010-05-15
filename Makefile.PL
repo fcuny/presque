@@ -6,6 +6,7 @@ readme_from 'lib/presque.pm';
 requires 'JSON';
 requires 'Tatsumaki';
 requires 'Moose';
+requires 'MooseX::Role::Parameterized';
 requires 'AnyEvent::Redis';
 
 tests 't/*.t';
