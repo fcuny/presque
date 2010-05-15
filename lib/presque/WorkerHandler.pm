@@ -3,7 +3,7 @@ package presque::WorkerHandler;
 use JSON;
 use Moose;
 extends 'Tatsumaki::Handler';
-with('presque::Role::Error',
+with('presque::Role::Error', 'presque::Role::Response',
     'presque::Role::RequireQueue' => {methods => [qw/delete post/]});
 
 __PACKAGE__->asynchronous(1);
@@ -36,6 +36,8 @@ sub post {
 
     $self->application->redis->sadd("workers",                $worker_id);
     $self->application->redis->sadd("workers:" . $queue_name, $worker_id);
+    $self->application->redis->set("processed:" . $worker_id, 0);
+    $self->application->redis->set("failed:" . $worker_id,    0);
     $self->application->redis->set("workers:" . $worker_id,
         JSON::encode_json({started_at => time, worker_id => $worker_id}));
     $self->response->code(201);
@@ -70,14 +72,14 @@ sub _get_stats_for_worker {
             my $desc = JSON::decode_json(shift @$res);
             $desc->{processed} = shift @$res;
             $desc->{failed}    = shift @$res;
-            $self->finish(JSON::encode_json($desc));
+            $self->entity($desc);
         }
     );
 }
 
 sub _get_stats_for_queue {
     my ($self, $queue_name) = @_;
-    $self->_get_smembers('workers:'.$queue_name);
+    $self->_get_smembers('workers:' . $queue_name);
 }
 
 sub _get_stats_for_workers {
@@ -97,3 +99,31 @@ sub _get_smembers {
 }
 
 1;
+=head1 NAME
+
+presque::WorkerHandler
+
+=head1 DESCRIPTION
+
+=head2 GET
+
+=head2 DELETE
+
+=head2 POST
+
+=head1 AUTHOR
+
+franck cuny E<lt>franck@lumberjaph.netE<gt>
+
+=head1 SEE ALSO
+
+=head1 LICENSE
+
+Copyright 2010 by Linkfluence
+
+L<http://linkfluence.net>
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut
