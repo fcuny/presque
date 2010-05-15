@@ -37,4 +37,14 @@ sub _queue_worker {
     return 'worker:'.$worker_name;
 }
 
+sub _queue_failed {
+    my ($self, $queue_name) = @_;
+    return 'failed:'.$queue_name;
+}
+
+sub _queue_processed {
+    my ($self, $queue_name) = @_;
+    return 'processed:' . $queue_name;
+}
+
 1;
