@@ -120,7 +120,7 @@ franck cuny E<lt>franck@lumberjaph.netE<gt>
 
 =head1 SEE ALSO
 
-For a complete description of each routes, refer to L<presque::WorkerHandler>, L<presque::RestQueueHandler>, L<presque::ControlHandler>, L<JobQueueHandler>, L<presque::StatusHandler>.
+For a complete description of each routes, refer to L<presque::WorkerHandler>, L<presque::RestQueueHandler>, L<presque::ControlHandler>, L<presque::JobQueueHandler>, L<presque::StatusHandler>.
 
 For a complete worker see L<presque::worker>.
 
