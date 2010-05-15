@@ -99,17 +99,103 @@ sub _get_smembers {
 }
 
 1;
+
 =head1 NAME
 
 presque::WorkerHandler
 
+=head1 SYNOPSIS
+
+    # fetch some informations about a worker
+    curl "http://localhost:5000/w/?worker_id=myworker_1" | json_xs -f json -t json-pretty
+
+    {
+        "worker_id" : "myworker_1",
+        "started_at" : 1273923534,
+        "processed" : "0",
+        "failed" : "0"
+    }
+    # to register the worker "worker_1" on the queue "queuename"
+    curl -H 'Content-Type: appplication/json' http://localhost:5000/w/queuename -d '{"worker_id":"worker_1"}'
+
+    # to unreg a worker
+    curl -X DELETE "http://localhost:5000/w/foo?worker_id=myworker_1"
+
 =head1 DESCRIPTION
+
+It iss possible for a worker to register itself against presque. This is not required. The main purpose of registering workers is to collect informations about your workers : what are they doing right now, how many jobs have they failed, how many jobs have they processed, ...
 
 =head2 GET
 
+=over 4
+
+=item path
+
+/w/queuename
+
+=item request
+
+query : worker_id OR queue_name
+
+=item response
+
+http code : 200
+
+content_type : application/json
+
+=back
+
+When a worker is registered, statistics about this worker are collected.
+
 =head2 DELETE
 
+=over 4
+
+=item path
+
+/w/queuename
+
+=item request
+
+query : worker_id
+
+=item response
+
+code : 204
+
+content : null
+
+=back
+
+When a worker has finished to work, it should unregister itself. The response HTTP code is 204, and no content is returned.
+
 =head2 POST
+
+Register a worker on a queue.
+
+=over 4
+
+=item path
+
+/w/queuename
+
+=item request
+
+content_type : application/json
+
+body : {"worker_id":"worker_1"}
+
+=item response
+
+http code : 201
+
+content : null
+
+=back
+
+To register a worker, a POST request must be made. The content of the POST must be a JSON structure that contains the key B<worker_id> (all other keys will be ignored).
+
+The HTTP response is 201, and no content is returned.
 
 =head1 AUTHOR
 
