@@ -3,23 +3,26 @@ package presque::ControlHandler;
 use JSON;
 use Moose;
 extends 'Tatsumaki::Handler';
-with
-  qw/presque::Role::QueueName presque::Role::Error presque::Role::Response/;
+
+with (
+  'presque::Role::QueueName',
+  'presque::Role::Error',
+  'presque::Role::Response',
+  'presque::Role::RequireQueue' => {methods => [qw/get post/]},
+);
 
 __PACKAGE__->asynchronous(1);
 
 sub get {
-    my ( $self, $queue_name ) = @_;
-
-    return $self->http_error_queue if !$queue_name;
+    my ($self, $queue_name) = @_;
 
     $self->application->redis->get(
         $self->_queue_stat($queue_name),
         sub {
             my $status = shift;
             $self->finish(
-                JSON::encode_json( {
-                        queue  => $queue_name,
+                JSON::encode_json(
+                    {   queue  => $queue_name,
                         status => $status
                     }
                 )
@@ -31,13 +34,15 @@ sub get {
 sub post {
     my ( $self, $queue_name ) = @_;
 
-    return $self->http_error_queue if !$queue_name;
+    my $content = $self->request->content;
 
-    my $content = JSON::decode_json( $self->request->content );
-    if ( $content->{status} eq 'start' ) {
+    return $self->http_error('content is missing') if !$content;
+
+    my $json = JSON::decode_json( $content );
+    if ( $json->{status} eq 'start' ) {
         $self->_set_status( $queue_name, 1 );
     }
-    elsif ( $content->{status} eq 'stop' ) {
+    elsif ( $json->{status} eq 'stop' ) {
         $self->_set_status( $queue_name, 0 );
     }
     else {
@@ -46,22 +51,17 @@ sub post {
 }
 
 sub _set_status {
-    my ( $self, $queue_name, $status ) = @_;
+    my ($self, $queue_name, $status) = @_;
 
     my $key = $self->_queue_stat($queue_name);
 
-    $self->application->redis->set(
-        $key, 0,
-        sub {
-            my $res = shift;
-            $self->finish(
-                JSON::encode_json( {
-                        queue    => $queue_name,
-                        response => $res
-                    }
-                )
-            );
-        }
+    $self->application->redis->set($key, $status);
+    $self->finish(
+        JSON::encode_json(
+            {   queue    => $queue_name,
+                response => 'updated',
+            }
+        )
     );
 }
 

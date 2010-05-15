@@ -2,15 +2,18 @@ package presque::JobQueueHandler;
 
 use Moose;
 extends 'Tatsumaki::Handler';
-with
-  qw/presque::Role::QueueName presque::Role::Error presque::Role::Response/;
+
+with (
+  'presque::Role::QueueName',
+  'presque::Role::Error',
+  'presque::Role::Response',
+  'presque::Role::RequireQueue' => {methods => [qw/get/]},
+);
 
 __PACKAGE__->asynchronous(1);
 
 sub get {
     my ( $self, $queue_name ) = @_;
-
-    $self->http_error_queue if (!$queue_name);
 
     my $key = $self->_queue($queue_name);
 
