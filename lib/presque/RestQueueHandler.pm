@@ -199,7 +199,21 @@ __END__
 
 =head1 NAME
 
-presque::IndexHandler - a redis based message queue
+presque::RestQueueHandler
+
+=head1 SYNOPSIS
+
+    # insert a new job
+    curl -H 'Content-Type: application/json' -X POST "http://localhost:5000/q/foo" -d '{"key":"value"}'
+
+    # insert a delayed job
+    curl -H 'Content-Type: application/json' -X POST "http://localhost:5000/q/foo?delayed="$(expr `date +%s` + 500) -d '{"key":"value"}'
+
+    # fetch a job
+   curl http://localhost:5000/q/foo
+
+    # purge and delete all jobs for a queue
+    curl -X DELETE http://localhost:5000/q/foo
 
 =head1 DESCRIPTION
 
@@ -207,23 +221,35 @@ presque::IndexHandler - a redis based message queue
 
 =head2 get
 
-Get a JSON object out of the queue.
-
 =head2 post
-
-Insert a new job in the queue. The POST request must:
 
 =over 4
 
-=item
+=item path
 
-have the B<Content-Type> header of the request set to B<application/json>
+/q/queuename
 
-=item
+=item request
 
-the B<body> of the request must be a valid JSON object
+content-type : application/json
+
+content : JSON object
+
+query : delayed, worker_id
+
+=item response
+
+code : 201
+
+content : null
 
 =back
+
+The B<Content-Type> of the request must be set to B<application/json>. The body of the request must be a valid JSON object.
+
+It iss possible to create delayed jobs (eg: job that will not be run before a defined time in the futur).
+
+the B<delayed> value should be a date in epoch.
 
 =head2 delete
 
