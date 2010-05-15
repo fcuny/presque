@@ -23,21 +23,16 @@ sub get {
         $key,
         sub {
             my $size = shift;
-            $self->application->redis->get(
+            $self->application->redis->mget(
                 $processed,
+                $failed,
                 sub {
-                    my $processed_jobs = shift;
-                    $self->application->redis->get(
-                        $failed,
-                        sub {
-                            my $failed_jobs = shift;
-                            my $stats       = {
-                                queue_name    => $queue_name,
-                                job_count     => $size,
-                                job_failed    => $failed_jobs,
-                                job_processed => $processed_jobs,
-                            };
-                            $self->finish(JSON::encode_json $stats);
+                    my $res = shift;
+                    $self->entity(
+                        {   queue_name    => $queue_name,
+                            job_count     => $size,
+                            job_failed    => $res->[0],
+                            job_processed => $res->[1],
                         }
                     );
                 }
