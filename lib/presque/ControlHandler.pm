@@ -20,12 +20,10 @@ sub get {
         $self->_queue_stat($queue_name),
         sub {
             my $status = shift;
-            $self->finish(
-                JSON::encode_json(
-                    {   queue  => $queue_name,
-                        status => $status
-                    }
-                )
+            $self->entity(
+                {   queue  => $queue_name,
+                    status => $status
+                }
             );
         }
     );
@@ -56,12 +54,10 @@ sub _set_status {
     my $key = $self->_queue_stat($queue_name);
 
     $self->application->redis->set($key, $status);
-    $self->finish(
-        JSON::encode_json(
-            {   queue    => $queue_name,
-                response => 'updated',
-            }
-        )
+    $self->entity(
+        {   queue    => $queue_name,
+            response => 'updated',
+        }
     );
 }
 
