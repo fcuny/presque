@@ -32,10 +32,10 @@ sub get {
                         sub {
                             my $failed_jobs = shift;
                             my $stats       = {
-                                queue     => $queue_name,
-                                job_count => $size,
-                                failed    => $failed_jobs,
-                                processed => $processed_jobs,
+                                queue_name    => $queue_name,
+                                job_count     => $size,
+                                job_failed    => $failed_jobs,
+                                job_processed => $processed_jobs,
                             };
                             $self->finish(JSON::encode_json $stats);
                         }
