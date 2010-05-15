@@ -107,6 +107,7 @@ sub put {
     my $worker_id = $input->{worker_id} if $input && $input->{worker_id};
 
     $self->application->redis->incr('failed');
+    $self->application->redis->incr($self->_queue_failed($queue_name));
     if ($worker_id) {
         $self->application->redis->incr('failed:' . $worker_id);
     }
@@ -117,7 +118,7 @@ sub put {
 sub delete {
     my ($self, $queue_name) = @_;
 
-    # delete delayed queue
+    # XXX delete failed && processed
     my $lkey = $self->_queue($queue_name);
     my $dkey = $self->_queue_delayed($queue_name);
 
@@ -130,7 +131,8 @@ sub delete {
 sub _finish_get {
     my ($self, $job, $queue_name, $worker_id) = @_;
 
-   $self->application->redis->incr('processed');
+    $self->application->redis->incr('processed');
+    $self->application->redis->incr($self->_queue_processed($queue_name));
     if ($worker_id) {
         $self->application->redis->set(
             $self->_queue_worker($worker_id),
@@ -140,7 +142,7 @@ sub _finish_get {
                 }
             )
         );
-       $self->application->redis->incr('processed:' . $worker_id);
+        $self->application->redis->incr('processed:' . $worker_id);
     }
     $self->finish($job);
 }
