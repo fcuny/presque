@@ -13,28 +13,29 @@ with (
 __PACKAGE__->asynchronous(1);
 
 sub get {
-    my ( $self, $queue_name ) = @_;
+    my ($self, $queue_name) = @_;
 
-    my $key = $self->_queue($queue_name);
+    my $key       = $self->_queue($queue_name);
+    my $processed = $self->_queue_processed($queue_name);
+    my $failed    = $self->_queue_failed($queue_name);
 
-    $self->application->redis->lrange(
-        $key, 0, 9,
+    $self->application->redis->llen(
+        $key,
         sub {
-            my $jobs = shift;
-            $self->application->redis->llen(
-                $key,
+            my $size = shift;
+            $self->application->redis->get(
+                $processed,
                 sub {
-                    my $size = shift;
-                    my $lkey = $queue_name . '*';
-                    $self->application->redis->keys(
-                        $lkey,
+                    my $processed_jobs = shift;
+                    $self->application->redis->get(
+                        $failed,
                         sub {
-                            my $total = shift;
-                            my $stats = {
-                                queue      => $queue_name,
-                                jobs       => $jobs,
-                                job_count  => $size,
-                                queue_size => scalar @$total
+                            my $failed_jobs = shift;
+                            my $stats       = {
+                                queue     => $queue_name,
+                                job_count => $size,
+                                failed    => $failed_jobs,
+                                processed => $processed_jobs,
                             };
                             $self->finish(JSON::encode_json $stats);
                         }
