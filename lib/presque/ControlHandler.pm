@@ -66,11 +66,66 @@ __END__
 
 =head1 NAME
 
-presque::ControlHandler - a redis based message queue
+presque::ControlHandler
+
+=head1 SYNOPSIS
+
+    # stop a queue
+    curl -X POST -H 'Content-Type: application/json' -d '{"status":"stop"}' http://localhost:5000/control/queuename
+
+    # start a queue
+    curl -X POST -H 'Content-Type: application/json' -d '{"status":"start"}' http://localhost:5000/control/queuename
+
+    # fetch the status of a queue
+    curl http://localhost:5000/control/queuename
 
 =head1 DESCRIPTION
 
+By default, when a queue is created, the status is set to 'open'. When a queue is set to 'stop', no job will be fetched from the queue.
+
 =head1 METHODS
+
+=head2 GET
+
+=over 4
+
+=item path
+
+/control/queuename
+
+=item request
+
+=item response
+
+content-type : application/json
+
+code : 200
+
+content : {"status":"0","queue":"foo"}
+
+=back
+
+=head2 POST
+
+=over 4
+
+=item path
+
+/control/queuename
+
+=item request
+
+content-type : application/json
+
+content : {"status":"stop"}
+
+=item response
+
+content-type : application/json
+
+content : {"response":"updated","queue":"foo"}
+
+=back
 
 =head1 AUTHOR
 
