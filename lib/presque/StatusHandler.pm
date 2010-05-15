@@ -10,10 +10,7 @@ __PACKAGE__->asynchronous(1);
 use JSON;
 
 sub get {
-    my ( $self, $queue_name ) = @_;
-
-    my $conf = $self->application->config->{redis};
-    my $stats = { redis => $conf->{host} . ':' . $conf->{port}, };
+    my ($self, $queue_name) = @_;
 
     if ($queue_name) {
         my $key = $self->_queue($queue_name);
@@ -21,10 +18,7 @@ sub get {
             $key,
             sub {
                 my $size = shift;
-                $stats->{queue} = $queue_name;
-                $stats->{size}  = $size;
-                my $json = JSON::encode_json($stats);
-                $self->finish($json);
+                $self->entity({queue => $queue_name, size => $size});
             }
         );
     }
@@ -33,9 +27,7 @@ sub get {
             'QUEUESET',
             sub {
                 my $res = shift;
-                $stats->{queues} = $res;
-                $stats->{size}   = scalar @$res;
-                $self->finish( JSON::encode_json($stats) );
+                $self->entity({queues => $res, size => scalar @$res});
             }
         );
     }
@@ -46,9 +38,11 @@ __END__
 
 =head1 NAME
 
-presque::IndexHandler - a redis based message queue
+presque::StatusHandler - return the current size of a queue
 
 =head1 DESCRIPTION
+
+=head2 GET
 
 =head1 AUTHOR
 
