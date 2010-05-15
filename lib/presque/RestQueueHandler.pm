@@ -8,16 +8,40 @@ with
 
 __PACKAGE__->asynchronous(1);
 
+around [qw/put post/] => sub {
+    my $orig       = shift;
+    my $self       = shift;
+    my $queue_name = shift;
+
+    return $self->http_error_queue if (!$queue_name);
+
+    return $self->http_error_content_type
+      if (!$self->request->header('Content-Type')
+        || $self->request->header('Content-Type') ne 'application/json');
+
+    return $self->http_error("job is missing") if !$self->request->content;
+
+    $self->$orig($queue_name);
+};
+
+around [qw/get delete/] => sub {
+    my $orig = shift;
+    my $self = shift;
+    my $queue_name = shift;
+
+    return $self->http_error_queue if (!$queue_name);
+
+    $self->$orig($queue_name);
+};
+
 sub get {
     my ($self, $queue_name) = @_;
-
-    return $self->http_error_queue if !$queue_name;
 
     my $dkey = $self->_queue_delayed($queue_name);
     my $lkey = $self->_queue($queue_name);
 
     my $input = $self->request->parameters;
-    my $worker_name = $input->{worker_name} if $input;
+    my $worker_id = $input->{worker_id} if $input && $input->{worker_id};
 
     $self->application->redis->get(
         $self->_queue_stat($queue_name),
@@ -40,7 +64,7 @@ sub get {
                             sub {
                                 my $job = shift;
                                 $self->_finish_get($job, $queue_name,
-                                    $worker_name);
+                                    $worker_id);
                             }
                         );
                     }
@@ -55,7 +79,7 @@ sub get {
                                         sub {
                                             my $job = shift;
                                             $self->_finish_get($job,
-                                                $queue_name, $worker_name);
+                                                $queue_name, $worker_id);
                                         }
                                     );
                                 }
@@ -73,17 +97,61 @@ sub get {
 
 sub post {
     my ($self, $queue_name) = @_;
+    $self->_create_job($queue_name);
+}
 
-    return $self->http_error_queue if (!$queue_name);
+sub put {
+    my ($self, $queue_name) = @_;
 
-    return $self->http_error_content_type
-      if (!$self->request->header('Content-Type')
-        || $self->request->header('Content-Type') ne 'application/json');
+    my $input = $self->request->parameters;
+    my $worker_id = $input->{worker_id} if $input && $input->{worker_id};
 
-    my $input   = $self->request->parameters;
-    my $delayed = $input->{delayed};
+    $self->application->redis->incr('failed');
+    if ($worker_id) {
+        $self->application->redis->incr('failed:' . $worker_id);
+    }
+
+    $self->_create_job($queue_name);
+}
+
+sub delete {
+    my ($self, $queue_name) = @_;
+
+    # delete delayed queue
+    my $lkey = $self->_queue($queue_name);
+    my $dkey = $self->_queue_delayed($queue_name);
+
+    $self->application->redis->del($lkey);
+    $self->application->redis->del($dkey);
+    $self->response->code(204);
+    $self->finish();
+}
+
+sub _finish_get {
+    my ($self, $job, $queue_name, $worker_id) = @_;
+
+   $self->application->redis->incr('processed');
+    if ($worker_id) {
+        $self->application->redis->set(
+            $self->_queue_worker($worker_id),
+            JSON::encode_json(
+                {   queue  => $queue_name,
+                    run_at => time()
+                }
+            )
+        );
+       $self->application->redis->incr('processed:' . $worker_id);
+    }
+    $self->finish($job);
+}
+
+sub _create_job {
+    my ($self, $queue_name) = @_;
 
     my $p = $self->request->content;
+
+    my $input   = $self->request->parameters;
+    my $delayed = $input->{delayed} if $input && $input->{delayed};
 
     $self->application->redis->incr(
         $self->_queue_uuid($queue_name),
@@ -107,39 +175,6 @@ sub post {
             );
         }
     );
-}
-
-sub delete {
-    my ($self, $queue_name) = @_;
-
-    return $self->http_error_queue if (!$queue_name);
-
-    # delete delayed queue
-    my $lkey = $self->_queue($queue_name);
-    my $dkey = $self->_queue_delayed($queue_name);
-
-    $self->application->redis->del($lkey);
-    $self->application->redis->del($dkey);
-    $self->response->code(204);
-    $self->finish();
-}
-
-sub _finish_get {
-    my ($self, $job, $queue_name, $worker_name) = @_;
-
-   $self->application->redis->incr('processed');
-    if ($worker_name) {
-        $self->application->redis->set(
-            $self->_queue_worker($worker_name),
-            JSON::encode_json(
-                {   queue  => $queue_name,
-                    run_at => time()
-                }
-            )
-        );
-       $self->application->redis->incr('processed:' . $worker_name);
-    }
-    $self->finish($job);
 }
 
 sub _finish_post {
