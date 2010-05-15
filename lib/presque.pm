@@ -33,7 +33,7 @@ sub app {
         [   '/q/(.*)'       => h('presque::RestQueueHandler'),
             '/j/(.*)'       => h('presque::JobQueueHandler'),
             '/w/(.*)'       => h('presque::WorkerHandler'),
-            '/stats/(.*)'   => h('presque::StatusHandler'),
+            '/status/(.*)'  => h('presque::StatusHandler'),
             '/control/(.*)' => h('presque::ControlHandler'),
             '/'             => h('presque::IndexHandler'),
         ]
