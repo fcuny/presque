@@ -31,8 +31,8 @@ sub get {
                     $self->entity(
                         {   queue_name    => $queue_name,
                             job_count     => $size,
-                            job_failed    => $res->[0],
-                            job_processed => $res->[1],
+                            job_processed => $res->[0],
+                            job_failed    => $res->[1],
                         }
                     );
                 }
