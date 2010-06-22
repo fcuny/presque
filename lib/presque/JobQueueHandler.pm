@@ -46,7 +46,9 @@ __END__
 
 =head1 NAME
 
-presque::IndexHandler - a redis based message queue
+presque::JobQueueHandler
+
+=head1 SYNOPSIS
 
 =head1 DESCRIPTION
 
