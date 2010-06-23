@@ -19,7 +19,12 @@ sub _queue_policy {
 
 sub _queue_uuid {
     my ($self, $queue_name) = @_;
-    return $queue_name;':UUID';
+    return $queue_name.':UUID';
+}
+
+sub _queue_unique {
+    my ($self, $queue_name) = @_;
+    return $queue_name . ':uniq';
 }
 
 sub _queue_key {
