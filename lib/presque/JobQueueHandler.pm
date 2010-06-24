@@ -3,12 +3,11 @@ package presque::JobQueueHandler;
 use Moose;
 extends 'Tatsumaki::Handler';
 
-with (
-  'presque::Role::QueueName',
+with
+  'presque::Role::Queue::Names',
   'presque::Role::Error',
   'presque::Role::Response',
-  'presque::Role::RequireQueue' => {methods => [qw/get/]},
-);
+  'presque::Role::Queue::WithQueueName' => {methods => [qw/get/]};
 
 __PACKAGE__->asynchronous(1);
 
@@ -50,9 +49,34 @@ presque::JobQueueHandler
 
 =head1 SYNOPSIS
 
+    # grab info from a queue
+    curl http://localhost:5000/j/queuename
+
 =head1 DESCRIPTION
 
 Return some informations about a queue.
+
+=head1 METHODS
+
+=head2 GET
+
+=over 4
+
+=item path
+
+/j/:queuename
+
+=item request
+
+=item response
+
+content-type: application/json
+
+code: 200
+
+content : {"queue_name":"foo","job_count":"0","job_processed":"127","job_failed":"37"
+
+=back
 
 =head1 AUTHOR
 
