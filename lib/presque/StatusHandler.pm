@@ -1,13 +1,14 @@
 package presque::StatusHandler;
 
+use JSON;
 use Moose;
 extends 'Tatsumaki::Handler';
 with
-  qw/presque::Role::QueueName presque::Role::Error presque::Role::Response/;
+  'presque::Role::Queue::Names',
+  'presque::Role::Error',
+  'presque::Role::Response';
 
 __PACKAGE__->asynchronous(1);
-
-use JSON;
 
 sub get {
     my ($self, $queue_name) = @_;

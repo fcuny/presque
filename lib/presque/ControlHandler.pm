@@ -4,12 +4,11 @@ use JSON;
 use Moose;
 extends 'Tatsumaki::Handler';
 
-with (
-  'presque::Role::QueueName',
+with
+  'presque::Role::Queue::Names',
   'presque::Role::Error',
   'presque::Role::Response',
-  'presque::Role::RequireQueue' => {methods => [qw/get post/]},
-);
+  'presque::Role::Queue::WithQueueName' => {methods => [qw/get post/]},;
 
 __PACKAGE__->asynchronous(1);
 
@@ -81,7 +80,7 @@ presque::ControlHandler
 
 =head1 DESCRIPTION
 
-By default, when a queue is created, the status is set to 'open'. When a queue is set to 'stop', no job will be fetched from the queue.
+By default, when a queue is created, the status is set to 'open'. When a queue is set to 'stop', no job will be fetched from the queue, but it's still possible to add new jobs.
 
 =head1 METHODS
 
@@ -91,7 +90,7 @@ By default, when a queue is created, the status is set to 'open'. When a queue i
 
 =item path
 
-/control/queuename
+/control/:queuename
 
 =item request
 
@@ -111,7 +110,7 @@ content : {"status":"0","queue":"foo"}
 
 =item path
 
-/control/queuename
+/control/:queuename
 
 =item request
 

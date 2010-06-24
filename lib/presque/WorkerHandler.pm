@@ -3,8 +3,10 @@ package presque::WorkerHandler;
 use JSON;
 use Moose;
 extends 'Tatsumaki::Handler';
-with('presque::Role::Error', 'presque::Role::Response',
-    'presque::Role::RequireQueue' => {methods => [qw/delete post/]});
+with
+    'presque::Role::Error',
+    'presque::Role::Response',
+    'presque::Role::Queue::WithQueueName' => {methods => [qw/delete post/]};
 
 __PACKAGE__->asynchronous(1);
 
