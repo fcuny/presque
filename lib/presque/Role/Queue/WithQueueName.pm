@@ -1,11 +1,8 @@
-package presque::Role::RequireQueue;
+package presque::Role::Queue::WithQueueName;
 
 use MooseX::Role::Parameterized;
 
-parameter methods => (
-    isa      => 'ArrayRef',
-    required => 1,
-);
+parameter methods => (is => 'ro', isa => 'ArrayRef', required => 1);
 
 role {
     my $p = shift;
@@ -18,9 +15,9 @@ role {
             my $self       = shift;
             my $queue_name = shift;
 
-            return $self->http_error_queue if !$queue_name;
+            return $self->http_error_queue if (!$queue_name);
 
-            $self->$orig($queue_name, @_);
+            $self->$orig($queue_name);
         };
     }
 };
