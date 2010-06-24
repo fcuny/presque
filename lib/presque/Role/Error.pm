@@ -16,7 +16,7 @@ sub http_error_content_type {
     (shift)->http_error('content-type must be set to application/json');
 }
 
-sub http_error_closed_queue {
+sub http_error_queue_is_closed {
     (shift)->http_error('queue is closed', 404);
 }
 
