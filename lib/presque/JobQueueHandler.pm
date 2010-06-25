@@ -22,6 +22,7 @@ sub get {
         $key,
         sub {
             my $size = shift;
+            warn "ici avec size!\n";
             $self->application->redis->mget(
                 $processed,
                 $failed,
@@ -29,9 +30,9 @@ sub get {
                     my $res = shift;
                     $self->entity(
                         {   queue_name    => $queue_name,
-                            job_count     => $size,
-                            job_processed => $res->[0],
-                            job_failed    => $res->[1],
+                            job_count     => $size || 0,
+                            job_processed => $res->[0] || 0,
+                            job_failed    => $res->[1] || 0,
                         }
                     );
                 }

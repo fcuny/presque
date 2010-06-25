@@ -148,3 +148,25 @@ sub _create_job {
 }
 
 1;
+__END__
+
+=head1 NAME
+
+presque::RestQueueBatchHandler
+
+=head1 SYNOPSIS
+
+    # insert a list of jobs
+    curl -H 'Content-Type: application/json' -X POST "http://localhost:5000/qb/foo" -d '{jobs:["key":"value"], ["key2":"value2"]}'
+
+    # fetch some jobs
+    curl http://localhost:5000/qb/foo
+
+=head1 DESCRIPTION
+
+=head1 METHODS
+
+=head2 get
+
+=head2 post
+

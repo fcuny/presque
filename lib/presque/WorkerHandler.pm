@@ -71,9 +71,10 @@ sub _get_stats_for_worker {
         'failed:' . $worker_id,
         sub {
             my $res  = shift;
-            my $desc = JSON::decode_json(shift @$res);
-            $desc->{processed} = shift @$res;
-            $desc->{failed}    = shift @$res;
+            my $desc = {};
+            $desc = JSON::decode_json(shift @$res) if $res->[0];
+            $desc->{processed} = $res->[1] || 0;
+            $desc->{failed}    = $res->[2] || 0;
             $self->entity($desc);
         }
     );
