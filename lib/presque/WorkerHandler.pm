@@ -118,6 +118,7 @@ presque::WorkerHandler
         "processed" : "0",
         "failed" : "0"
     }
+
     # to register the worker "worker_1" on the queue "queuename"
     curl -H 'Content-Type: appplication/json' http://localhost:5000/w/queuename -d '{"worker_id":"worker_1"}'
 
@@ -126,7 +127,7 @@ presque::WorkerHandler
 
 =head1 DESCRIPTION
 
-It iss possible for a worker to register itself against presque. This is not required. The main purpose of registering workers is to collect informations about your workers : what are they doing right now, how many jobs have they failed, how many jobs have they processed, ...
+It's possible for a worker to register itself against presque. This is not required. The main purpose of registering workers is to collect informations about your workers : what are they doing right now, how many jobs have they failed, how many jobs have they processed, ...
 
 =head2 GET
 
@@ -134,11 +135,11 @@ It iss possible for a worker to register itself against presque. This is not req
 
 =item path
 
-/w/queuename
+/w/:queue_name
 
 =item request
 
-query : worker_id OR queue_name
+query : worker_id OR queue_name OR none
 
 =item response
 
@@ -148,7 +149,7 @@ content_type : application/json
 
 =back
 
-When a worker is registered, statistics about this worker are collected.
+If the query parameter is B<worker_id>, stats about this worker are returned. If the query parameter is B<queue_name>, stats about the workers on this queue are returned. If no query parameter is set, stats about the queue are returned.
 
 =head2 DELETE
 
@@ -156,7 +157,7 @@ When a worker is registered, statistics about this worker are collected.
 
 =item path
 
-/w/queuename
+/w/:queue_name
 
 =item request
 
@@ -180,7 +181,7 @@ Register a worker on a queue.
 
 =item path
 
-/w/queuename
+/w/:queue_name
 
 =item request
 

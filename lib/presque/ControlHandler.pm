@@ -72,13 +72,13 @@ presque::ControlHandler
 =head1 SYNOPSIS
 
     # stop a queue
-    curl -X POST -H 'Content-Type: application/json' -d '{"status":"stop"}' http://localhost:5000/control/queuename
+    curl -X POST -H 'Content-Type: application/json' -d '{"status":"stop"}' http://localhost:5000/control/:queue_name
 
     # start a queue
-    curl -X POST -H 'Content-Type: application/json' -d '{"status":"start"}' http://localhost:5000/control/queuename
+    curl -X POST -H 'Content-Type: application/json' -d '{"status":"start"}' http://localhost:5000/control/:queue_name
 
     # fetch the status of a queue
-    curl http://localhost:5000/control/queuename
+    curl http://localhost:5000/control/:queue_name
 
 =head1 DESCRIPTION
 
@@ -92,7 +92,7 @@ By default, when a queue is created, the status is set to 'open'. When a queue i
 
 =item path
 
-/control/:queuename
+/control/:queue_name
 
 =item request
 
@@ -106,13 +106,31 @@ content : {"status":"0","queue":"foo", next_run_after: "1234"}
 
 =back
 
+If there is some delayed jobs in this queue, the date for the nearlier delayed job will be return in the response. The informations returned are:
+
+=over 2
+
+=item B<queue>
+
+name of the queue
+
+=item B<status>
+
+status of the queue: 1 or 0
+
+=item B<next_run_after>
+
+When will be run the next delayed job
+
+=back
+
 =head2 POST
 
 =over 4
 
 =item path
 
-/control/:queuename
+/control/:queue_name
 
 =item request
 
@@ -127,6 +145,8 @@ content-type : application/json
 content : {"response":"updated","queue":"foo"}
 
 =back
+
+Use this method to B<start> or B<stop> a queue.
 
 =head1 AUTHOR
 

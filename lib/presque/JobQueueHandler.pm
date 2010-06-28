@@ -22,7 +22,6 @@ sub get {
         $key,
         sub {
             my $size = shift;
-            warn "ici avec size!\n";
             $self->application->redis->mget(
                 $processed,
                 $failed,
@@ -65,7 +64,7 @@ Return some informations about a queue.
 
 =item path
 
-/j/:queuename
+/j/:queue_name
 
 =item request
 
@@ -75,7 +74,29 @@ content-type: application/json
 
 code: 200
 
-content : {"queue_name":"foo","job_count":"0","job_processed":"127","job_failed":"37"
+content : {"queue_name":"foo","job_count":"0","job_processed":"127","job_failed":"37"}
+
+=back
+
+This method return some statistics about a queue. The informations are :
+
+=over 2
+
+=item B<queue_name>
+
+name of the queue
+
+=item B<job_count>
+
+how many jobs are in the queue
+
+=item B<job_processed>
+
+how many jobs have been processed so far for this queue
+
+=item B<job_failed>
+
+how many job have been reported as failed for this queue
 
 =back
 

@@ -43,7 +43,41 @@ presque::StatusHandler - return the current size of a queue
 
 =head1 DESCRIPTION
 
+Return the current size of a queue
+
 =head2 GET
+
+=over 4
+
+=item path
+
+/status/:queue_name
+
+=item request
+
+=item response
+
+content-type : application/json
+
+code : 200
+
+content : {"queue":"queue_name", "size":10}
+
+=back
+
+The response contains the following informations
+
+=over 2
+
+=item B<queue>
+
+name of the queue
+
+=item B<size>
+
+size of the queue
+
+=back
 
 =head1 AUTHOR
 
