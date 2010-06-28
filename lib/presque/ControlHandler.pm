@@ -15,13 +15,15 @@ __PACKAGE__->asynchronous(1);
 sub get {
     my ($self, $queue_name) = @_;
 
-    $self->application->redis->get(
+    $self->application->redis->mget(
         $self->_queue_stat($queue_name),
+        $self->_queue_delayed_next($queue_name),
         sub {
-            my $status = shift;
+            my $res = shift;
             $self->entity(
-                {   queue  => $queue_name,
-                    status => $status
+                {   queue          => $queue_name,
+                    status         => $res->[0],
+                    next_run_after => $res->[1],
                 }
             );
         }

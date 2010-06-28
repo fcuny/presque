@@ -12,6 +12,11 @@ sub _queue_delayed {
     return $queue_name.':delayed';
 }
 
+sub _queue_delayed_next {
+    my ($self, $queue_name) = @_;
+    return $queue_name.':delayed:next';
+}
+
 sub _queue_policy {
     my ($self, $queue_name) = @_;
     return $queue_name.':queuepolicy';
