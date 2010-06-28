@@ -102,7 +102,7 @@ content-type : application/json
 
 code : 200
 
-content : {"status":"0","queue":"foo"}
+content : {"status":"0","queue":"foo", next_run_after: "1234"}
 
 =back
 
