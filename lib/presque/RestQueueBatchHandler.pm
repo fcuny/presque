@@ -16,7 +16,7 @@ sub _fetch_job {
 
     my $input = $self->request->parameters;
     my $batch_size =
-      ($input && $input->{batch_size}) ? $input->{batch_size} : 50;
+      ($input && $input->{batch_size}) ? $input->{batch_size} : 10;
 
     $self->application->redis->zrangebyscore(
         $dkey, 0, time,
@@ -26,7 +26,7 @@ sub _fetch_job {
                 $self->_get_jobs_from_delay_queue($queue_name, $dkey, $values, $batch_size);
             }
             else {
-                $self->_get_jobs_from_queue($queue_name, 0, $batch_size, []);
+                $self->_get_jobs_from_queue($queue_name, 0, $batch_size, [], []);
             }
         }
     );
@@ -43,13 +43,13 @@ sub _get_jobs_from_delay_queue {
         @keys,
         sub {
             my $jobs = shift;
-            $self->_finish_get($queue_name, $jobs);
+            $self->_finish_get($queue_name, $jobs, \@keys);
         }
     );
 }
 
 sub _get_jobs_from_queue {
-    my ($self, $queue_name, $pos, $batch_size, $jobs) = @_;
+    my ($self, $queue_name, $pos, $batch_size, $jobs, $keys) = @_;
 
     my $lkey = $self->_queue($queue_name);
 
@@ -62,17 +62,22 @@ sub _get_jobs_from_queue {
                     $value,
                     sub {
                         my $job = shift;
+                        push @$keys, $value;
                         push @$jobs, $job;
                         if (++$pos >= ($batch_size - 1)) {
-                            $self->_finish_get($queue_name, $jobs);
+                            $self->_finish_get($queue_name, $jobs, $keys);
                         }
                         else {
-                            $self->_get_jobs_from_queue($queue_name, $pos, $batch_size, $jobs);
+                            $self->_get_jobs_from_queue(
+                                $queue_name, $pos, $batch_size,
+                                $jobs,       $keys
+                            );
                         }
                     }
                 );
-            }elsif(scalar @$jobs) {
-                $self->_finish_get($queue_name, $jobs);
+            }
+            elsif (scalar @$jobs) {
+                $self->_finish_get($queue_name, $jobs, $keys);
             }
             else {
                 $self->http_error('no job', 404);

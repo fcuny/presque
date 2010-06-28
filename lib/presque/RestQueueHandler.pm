@@ -62,7 +62,7 @@ sub _get_job_from_delay_queue {
         $k,
         sub {
             my $job = shift;
-            $self->_finish_get($queue_name, $job);
+            $self->_finish_get($queue_name, $job, $k);
         }
     );
 }
@@ -81,7 +81,7 @@ sub _get_job_from_queue {
                     $value,
                     sub {
                         my $job = shift;
-                        $self->_finish_get($queue_name, $job);
+                        $self->_finish_get($queue_name, $job, $value);
                     }
                 );
             }
@@ -93,11 +93,43 @@ sub _get_job_from_queue {
 }
 
 sub _finish_get {
-    my ($self, $queue_name, $job) = @_;
+    my ($self, $queue_name, $job, $key) = @_;
 
+    $self->_remove_from_uniq($queue_name, $key);
     $self->_update_queue_stats($queue_name, $job);
     $self->_update_worker_stats($queue_name, $job);
     $self->finish($job);
+}
+
+sub _remove_from_uniq {
+    my ($self, $queue_name, $key) = @_;
+
+    my @keys;
+    if (ref $key) {
+        @keys = map {
+            $self->_queue_uniq($queue_name, $_)
+        } grep {
+            defined $_;
+        } @$key;
+    }
+    else {
+        push @keys, $self->_queue_uniq($queue_name, $key);
+    }
+
+    $self->application->redis->mget(
+        @keys,
+        sub {
+            my $value = shift;
+            for my $i (0 .. (@$value - 1)) {
+                if (my $key = $value->[$i]) {
+                    $self->application->redis->del(
+                        $self->_queue_uniq($queue_name, $key));
+                    $self->application->redis->del(
+                        $self->_queue_uniq($queue_name, $keys[$i]));
+                }
+            }
+        }
+    );
 }
 
 sub _update_queue_stats {
@@ -136,8 +168,8 @@ sub _create_job {
     my $uniq    = $input->{uniq} if $input && $input->{uniq};
 
     if ($uniq) {
-        $self->application->redis->sismember(
-            $self->_queue_uniq($queue_name), $uniq,
+        $self->application->redis->get(
+            $self->_queue_uniq($queue_name, $uniq),
             sub {
                 my $status = shift;
                 if ($status) {
@@ -169,12 +201,15 @@ sub _insert_to_queue {
                     my $status_set = shift;
                     my $lkey       = $self->_queue($queue_name);
                     $self->new_queue($queue_name, $lkey) if ($uuid == 1);
-                    $self->application->redis->zadd(
-                        $self->_queue_uniq($queue_name), $uniq)
-                      if $uniq;
+                    if ($uniq) {
+                        $self->application->redis->set(
+                            $self->_queue_uniq($queue_name, $uniq), $key);
+                        $self->application->redis->set(
+                            $self->_queue_uniq($queue_name, $key), $uniq);
+                    }
                     $self->_finish_post($lkey, $key, $status_set, $delayed,
                         $queue_name);
-                  }
+                }
             );
         }
     );
@@ -282,6 +317,10 @@ content-type : application/json
 content : JSON object
 
 query : delayed, worker_id
+
+delay : after which date (in epoch) this job should be run
+
+uniq : this job is uniq. The value is the string that will be used to determined if the job is uniq
 
 =item response
 
