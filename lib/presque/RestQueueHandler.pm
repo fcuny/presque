@@ -318,7 +318,7 @@ content : JSON object
 
 query : delayed, worker_id
 
-delay : after which date (in epoch) this job should be run
+delayed : after which date (in epoch) this job should be run
 
 uniq : this job is uniq. The value is the string that will be used to determined if the job is uniq
 

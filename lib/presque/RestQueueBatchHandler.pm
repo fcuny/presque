@@ -157,21 +157,75 @@ __END__
 
 =head1 NAME
 
-presque::RestQueueBatchHandler
+presque::RestQueueBatchHandler - insert or fetch jobs in batch
 
 =head1 SYNOPSIS
 
     # insert a list of jobs
-    curl -H 'Content-Type: application/json' -X POST "http://localhost:5000/qb/foo" -d '{jobs:["key":"value"], ["key2":"value2"]}'
+    curl -H 'Content-Type: application/json' -X POST "http://localhost:5000/qb/foo" -d '{jobs:[{"key":"value"}, {"key2":"value2"}]}'
 
     # fetch some jobs
     curl http://localhost:5000/qb/foo
 
 =head1 DESCRIPTION
 
+Insert of fetch jobs in batch.
+
 =head1 METHODS
 
 =head2 get
 
+=over 4
+
+=item path
+
+/qb/:queue_name
+
+=item request
+
+queue_name: [required] name of the queue to use
+
+=item response
+
+If the queue is closed: 404
+
+=back
+
 =head2 post
 
+=over 4
+
+=item path
+
+/qb/:queue_name
+
+=item request
+
+queue_name: [required] name of the queue to use
+
+Content-Type: application/json
+
+=item response
+
+=back
+
+The batch method doesn't support delayed and uniq. Jobs are array ref under the "jobs" key.
+
+=back
+
+=head1 AUTHOR
+
+franck cuny E<lt>franck@lumberjaph.netE<gt>
+
+=head1 SEE ALSO
+
+=head1 LICENSE
+
+Copyright 2010 by Linkfluence
+
+L<http://linkfluence.net>
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut
