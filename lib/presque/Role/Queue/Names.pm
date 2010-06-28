@@ -28,8 +28,8 @@ sub _queue_uuid {
 }
 
 sub _queue_uniq {
-    my ($self, $queue_name) = @_;
-    return $queue_name . ':uniq';
+    my ($self, $queue_name, $value) = @_;
+    return join(':', $queue_name, 'uniq', $value);
 }
 
 sub _queue_key {
