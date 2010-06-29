@@ -231,12 +231,13 @@ sub _failed_job {
 sub _purge_queue {
     my ($self, $queue_name) = @_;
 
-    # XXX delete failed && processed
     my $lkey = $self->_queue($queue_name);
     my $dkey = $self->_queue_delayed($queue_name);
 
     $self->application->redis->del($lkey);
     $self->application->redis->del($dkey);
+    $self->application->redis->del($self->_queue_failed($queue_name));
+    $self->application->redis->del($self->_queue_processed($queue_name));
     $self->response->code(204);
     $self->finish();
 }
