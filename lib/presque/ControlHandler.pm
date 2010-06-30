@@ -17,13 +17,11 @@ sub get {
 
     $self->application->redis->mget(
         $self->_queue_stat($queue_name),
-        $self->_queue_delayed_next($queue_name),
         sub {
             my $res = shift;
             $self->entity(
                 {   queue          => $queue_name,
                     status         => $res->[0],
-                    next_run_after => $res->[1],
                 }
             );
         }
@@ -102,7 +100,7 @@ content-type : application/json
 
 code : 200
 
-content : {"status":"0","queue":"foo", next_run_after: "1234"}
+content : {"status":"0","queue":"foo"}
 
 =back
 
@@ -117,10 +115,6 @@ name of the queue
 =item B<status>
 
 status of the queue: 1 or 0
-
-=item B<next_run_after>
-
-When will be run the next delayed job
 
 =back
 
