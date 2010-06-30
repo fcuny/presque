@@ -22,16 +22,23 @@ sub get {
         $key,
         sub {
             my $size = shift;
-            $self->application->redis->mget(
-                $processed,
-                $failed,
+            $self->application->redis->hget(
+                $self->_queue_processed,
+                $queue_name,
                 sub {
-                    my $res = shift;
-                    $self->entity(
-                        {   queue_name    => $queue_name,
-                            job_count     => $size || 0,
-                            job_processed => $res->[0] || 0,
-                            job_failed    => $res->[1] || 0,
+                    my $processed = shift;
+                    $self->application->redis->hget(
+                        $self->_queue_failed,
+                        $queue_name,
+                        sub {
+                            my $failed = shift;
+                            $self->entity(
+                                {   queue_name    => $queue_name,
+                                    job_count     => $size || 0,
+                                    job_failed    => $failed || 0,
+                                    job_processed => $processed || 0,
+                                }
+                            );
                         }
                     );
                 }
