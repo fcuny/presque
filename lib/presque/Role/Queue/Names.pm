@@ -4,57 +4,58 @@ use Moose::Role;
 
 sub _queue {
     my ($self, $queue_name) = @_;
-    return $queue_name.':queue';
+    return join(':', $queue_name, 'queue');
+}
+
+sub _queue_set {
+    return 'QUEUESET';
 }
 
 sub _queue_delayed {
     my ($self, $queue_name) = @_;
-    return $queue_name.':delayed';
-}
-
-sub _queue_delayed_next {
-    my ($self, $queue_name) = @_;
-    return $queue_name.':delayed:next';
+    return join(':', $queue_name, 'delayed');
 }
 
 sub _queue_policy {
     my ($self, $queue_name) = @_;
-    return $queue_name.':queuepolicy';
+    return join(':', $queue_name, 'queuepolicy');
 }
 
 sub _queue_uuid {
     my ($self, $queue_name) = @_;
-    return $queue_name.':UUID';
+    return join(':', $queue_name, 'UUID');
 }
 
 sub _queue_uniq {
-    my ($self, $queue_name, $value) = @_;
-    return join(':', $queue_name, 'uniq', $value);
+    my ($self, $queue_name,) = @_;
+    return join(':', $queue_name, 'uniq');
+}
+
+sub _queue_uniq_revert {
+    my ($self, $queue_name,) = @_;
+    return join(':', 'foo', $queue_name, 'uniq_job');
 }
 
 sub _queue_key {
     my ($self, $queue_name, $uuid) = @_;
-    return $queue_name.':'.$uuid;
+    return join(':', $queue_name, $uuid);
 }
 
 sub _queue_stat {
     my ($self, $queue_name) = @_;
-    return 'queuestat:'.$queue_name;
+    return join(':', 'queuestat', $queue_name);
 }
 
-sub _queue_worker {
-    my ($self, $worker_name) = @_;
-    return 'worker:'.$worker_name;
-}
-
-sub _queue_failed {
+sub _workers_on_queue {
     my ($self, $queue_name) = @_;
-    return 'failed:'.$queue_name;
+    return join(':', 'workers', $queue_name);
 }
 
-sub _queue_processed {
-    my ($self, $queue_name) = @_;
-    return 'processed:' . $queue_name;
-}
+sub _workers_list      {"workers"}
+sub _workers_processed {"workers:processed"}
+sub _workers_failed    {"workers:failed"}
+
+sub _queue_processed   {"processed"}
+sub _queue_failed      {"failed"}
 
 1;
