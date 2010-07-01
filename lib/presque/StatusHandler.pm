@@ -25,7 +25,7 @@ sub get {
     }
     else {
         $self->application->redis->smembers(
-            'QUEUESET',
+            $self->_queue_set,
             sub {
                 my $res = shift;
                 $self->entity({queues => $res, size => scalar @$res});
