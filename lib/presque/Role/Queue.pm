@@ -16,17 +16,8 @@ sub push_job {
     if ($delayed) {
         $method = 'zadd';
         @args = ($queue_name . ':delayed', $delayed, $key);
-        $self->application->redis->get(
-            $self->_queue_delayed_next($queue_name),
-            sub {
-                my $val = shift;
-                if (!$val || ($val && $val > $delayed)) {
-                    $self->application->redis->set(
-                        $self->_queue_delayed_next($queue_name), $delayed);
-                }
-            }
-        );
     }
+
     $self->application->redis->$method(@args,);
 }
 
