@@ -89,8 +89,8 @@ sub _get_jobs_from_queue {
 sub _update_queue_stats {
     my ($self, $queue_name, $jobs) = @_;
 
-    $self->application->redis->incrby('processed', scalar @$jobs);
-    $self->application->redis->incrby($self->_queue_processed($queue_name), scalar @$jobs);
+    $self->application->redis->hincrby($self->_queue_processed, $queue_name,
+        scalar @$jobs);
 }
 
 sub _update_worker_stats {
@@ -100,15 +100,8 @@ sub _update_worker_stats {
     my $worker_id = $input->{worker_id};
 
     if ($worker_id) {
-        $self->application->redis->set(
-            $self->_queue_worker($worker_id),
-            JSON::encode_json(
-                {   queue  => $queue_name,
-                    run_at => time()
-                }
-            )
-        );
-        $self->application->redis->incrby('processed:' . $worker_id, scalar @$jobs);
+        $self->application->redis->hincrby($self->_workers_processed,
+            $worker_id, @$jobs);
     }
 }
 
