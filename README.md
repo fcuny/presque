@@ -8,8 +8,7 @@ In order to use presque, you will need:
 
    * [Tatsumaki](http://search.cpan.org/perldoc?Tatsumaki)
    * [Redis](http://code.google.com/p/redis/) (at least version 2.0)
-   * [AnyEvent::Redis](http://search.cpan.org/perldoc?AnyEvent::Redis) original lib.
-   * [AnyEvent::Redis](http://github.com/franckcuny/AnyEvent-Redis) for Hash support in Redis (required)
+   * [AnyEvent::Redis](http://search.cpan.org/perldoc?AnyEvent::Redis)
 
 ## INTRODUCTION
 
@@ -63,6 +62,7 @@ The following HTTP routes are available:
 ## LIBRARIES
 
   * [Net::Presque](http://github.com/franckcuny/net-presque) - Perl
+  * [Presque::Client](http://github.com/ngrunwald/presque-client) - Clojure
 
 ## AUTHOR
 

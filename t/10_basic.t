@@ -154,10 +154,10 @@ test_psgi $app, sub {
     is $res->code, 201, 'worker is reg.';
 
     # create/fetch/mcreate/mfetch/fail/stats
-    $res = create_job($cb, $job, $queue_url."?worker_id=$worker_id");
+    $res = create_job($cb, $job, $queue_url);
     is $res->code, 201, 'job created';
 
-    $res = get_jobs($cb, $queue_url."?worker_id=$worker_id");
+    $res = get_jobs($cb, $queue_url);
     is $res->code, 200, 'got job';
 
     $res = workers_stats($cb);
@@ -197,8 +197,9 @@ sub get_job {
 
 sub get_jobs {
     my $cb = shift;
-    my $req     = HTTP::Request->new(GET => $queue_batch_url);
-    ok my $res     = $cb->($req);
+    my $req = HTTP::Request->new(GET => $queue_batch_url);
+    $req->header('X-presque-workerid' => $worker_id);
+    ok my $res = $cb->($req);
     $res;
 }
 
@@ -207,6 +208,7 @@ sub create_job {
     $url ||= $queue_url;
     my $req = HTTP::Request->new(POST => $url);
     $req->header('Content-Type' => 'application/json');
+    $req->header('X-presque-workerid' => $worker_id);
     $req->content(JSON::encode_json($job));
     ok my $res = $cb->($req);
     $res;
@@ -261,17 +263,18 @@ sub workers_stats {
 }
 
 sub reg_worker {
-    my ($cb, ) = @_;
-    my $req = HTTP::Request->new(POST => $worker_url."$queue");
-    $req->content(JSON::encode_json({worker_id => $worker_id}));
-    $req->header('Content-Type' => 'application/json');
+    my ($cb,) = @_;
+    my $req = HTTP::Request->new(POST => $worker_url . "$queue");
+    $req->header('Content-Type'       => 'application/json');
+    $req->header('X-presque-workerid' => $worker_id);
     ok my $res = $cb->($req);
     $res;
 }
 
 sub unreg_worker {
     my ($cb, ) = @_;
-    my $req = HTTP::Request->new(DELETE => $worker_url."$queue?worker_id=$worker_id");
+    my $req = HTTP::Request->new(DELETE => $worker_url.$queue);
+    $req->header('X-presque-workerid' => $worker_id);
     ok my $res = $cb->($req);
     $res;
 }
