@@ -19,20 +19,23 @@ my $app = presque->app(
     }
 );
 
-my $queue           = "presque_test";
-my $queue_url       = "http://localhost/q/$queue";
-my $queue_batch_url = "http://localhost/qb/$queue";
-my $job_url         = "http://localhost/j/$queue";
-my $status_url      = "http://localhost/status/$queue";
-my $worker_url      = "http://localhost/w/$queue";
-my $control_url     = "http://localhost/control/$queue";
+my $queue            = "presque_test";
+my $worker_id        = "worker_foo";
+my $queue_url        = "http://localhost/q/$queue";
+my $queue_batch_url  = "http://localhost/qb/$queue";
+my $job_url          = "http://localhost/j/$queue";
+my $status_url       = "http://localhost/status/$queue";
+my $worker_stats_url = "http://localhost/w/?queue_name=$queue";
+my $worker_url       = "http://localhost/w/";
+my $control_url      = "http://localhost/control/$queue";
 
 test_psgi $app, sub {
     my $cb = shift;
+    my ($req, $res);
+    my $content;
 
     # get queue informations
-    my $req = HTTP::Request->new(GET => $job_url);
-    ok my $res = $cb->($req), 'get info on an empty queue';
+    $res = get_stats_from_queue($cb);
     is_deeply JSON::decode_json $res->content,
       { job_processed => 0,
         job_count     => 0,
@@ -42,29 +45,19 @@ test_psgi $app, sub {
       'good job info result';
 
     # no job in queue
-    $req = HTTP::Request->new(GET => $queue_url);
-    ok $res = $cb->($req), 'first request done';
+    $res = get_job($cb);
     ok !$res->is_success, 'no job for this queue';
     is_deeply JSON::decode_json($res->content), {error => "no job"},
       'error message is valid';
 
-    # fail to create a new job
-    $req = HTTP::Request->new(POST => $queue_url);
+    # create a new job
     my $job = {foo => "bar"};
-    $req->content(JSON::encode_json($job));
-    $res = $cb->($req);
-    ok !$res->is_success, 'content-type is not set to json';
-
-    # insert a job
-    $req->header('Content-Type' => 'application/json');
-    $res = $cb->($req);
+    $res = create_job($cb, $job);
     ok $res->is_success, 'new job inserted';
 
     # info about a queue
-    $req = HTTP::Request->new(GET => $job_url);
-    $res = $cb->($req);
-    my $content = JSON::decode_json $res->content;
-    is_deeply $content,
+    $res = get_stats_from_queue($cb);
+    is_deeply JSON::decode_json $res->content,
       { job_count     => 1,
         job_failed    => 0,
         job_processed => 0,
@@ -73,85 +66,222 @@ test_psgi $app, sub {
       'valid jobs info';
 
     # do a basic job
-    $req = HTTP::Request->new(GET => $queue_url);
-    ok $res = $cb->($req), 'get a job';
+    $res = get_job($cb);
     ok $res->is_success, 'job fetched';
     is_deeply JSON::decode_json $res->content, $job, 'job is good';
 
     # insert a delayed job
-    $req = HTTP::Request->new(POST => $queue_url . '?delayed=' . (time() + 2));
-    $req->header('Content-Type' => 'application/json');
-    $req->content(JSON::encode_json({foo => 'baz'}));
-    ok $res = $cb->($req), 'delayed job inserted';
+    $res = create_job($cb, {foo => 'baz'}, $queue_url . '?delayed='.(time() + 2));
 
     # no job to do now
-    $req = HTTP::Request->new(GET => $queue_url);
-    $res = $cb->($req);
+    $res = get_job($cb);
     ok !$res->is_success, 'no job';
     sleep(2);
-    $res = $cb->($req);
+    $res = get_job($cb);
     ok $res->is_success, 'job found';
     like $res->content, qr/baz/, 'delayed job';
 
-    # # control queue
-    $req     = HTTP::Request->new(GET => $control_url);
-    $res     = $cb->($req);
-    $content = JSON::decode_json $res->content;
-    is_deeply $content,
+    # control queue
+    $res = control_queue($cb);
+    is_deeply JSON::decode_json $res->content,
       { status => 1,
         queue  => 'presque_test'
       },
       'queue is open';
 
     # close queue
-    $req = HTTP::Request->new(POST => $control_url);
-    $req->content(JSON::encode_json({status => 'stop'}));
-    $res = $cb->($req);
+    $res = change_queue_status($cb, 'stop');
     like $res->content, qr/updated/, 'queue status change';
 
     # status of a closed queue
-    $req = HTTP::Request->new(GET => $control_url);
-    $res = $cb->($req);
+    $res = control_queue($cb);
     like $res->content, qr/0/, 'queue is closed';
 
     # can't get job on a stopped queue
-    $req = HTTP::Request->new(GET => $queue_url);
-    $res = $cb->($req);
+    $res = get_job($cb);
     ok !$res->is_success, 'no job for this queue';
 
     # open queue
-    $req = HTTP::Request->new(POST => $control_url);
-    $req->content(JSON::encode_json({status => 'start'}));
-    $res = $cb->($req);
+    $res = change_queue_status($cb, 'start');
     like $res->content, qr/updated/, 'queue status change';
 
     # batch inserts
-    $req = HTTP::Request->new(POST => $queue_batch_url);
-    $req->header('Content-Type' => 'application/json');
     my $jobs = [{foo => 1}, {foo => 2}, {foo => 3}, {foo => 4}];
-    $req->content(JSON::encode_json({jobs => $jobs}));
-    ok $res = $cb->($req), 'insert a batch of jobs';
+    $res = create_jobs($cb, $jobs);
 
     # batch fetch
-    $req     = HTTP::Request->new(GET => $queue_batch_url);
-    $res     = $cb->($req);
+    $res     = get_jobs($cb);
     $content = JSON::decode_json $res->content;
-    my @jobs = map { JSON::decode_json $_ } @$content;
-    is_deeply $jobs, \@jobs, 'valid jobs';
+    is_deeply $jobs, [map { JSON::decode_json $_ } @$content], 'valid jobs';
+
+    # insert uniq job
+    $res = create_job($cb, {foo => 1}, $queue_url.'?uniq=a');
+    is $res->code, 201, 'new uniq job inserted';
+    $res = create_job($cb, {foo => 1}, $queue_url.'?uniq=a');
+    like $res->content, qr/job already exists/, 'job already exists';
+    is $res->code, 400, 'can\'t insert duplicate uniq job';
+
+    # fetch job
+    $res = get_job($cb);
+    is_deeply JSON::decode_json $res->content, {foo => 1}, 'fetch a job';
+
+    # no job in queue
+    $res = get_job($cb);
+    is $res->code, 404, 'no more job in queue';
+
+    # job failed
+    $res = failed_job($cb);
+    is $res->code, 201, 'valid HTTP code returned';
 
     # status
-    $req = HTTP::Request->new(GET => $status_url);
-    $res = $cb->($req);
+    $res = queue_status($cb);
     is_deeply JSON::decode_json $res->content,
-      {queue => 'presque_test', size => 0}, 'valid status';
+      {queue => 'presque_test', size => 1}, 'valid status';
 
-    # worker stats
+    # worker stats for queue
+    $res = workers_stats($cb);
+    is_deeply JSON::decode_json $res->content,
+      { workers_list => [],
+        queue_name   => "presque_test",
+        processed    => 7,
+        failed       => 1,
+      },
+      'valid stats for queue';
+
+    ## full process with worker id
+    # reg.
+    $res = reg_worker($cb);
+    is $res->code, 201, 'worker is reg.';
+
+    # create/fetch/mcreate/mfetch/fail/stats
+    $res = create_job($cb, $job, $queue_url."?worker_id=$worker_id");
+    is $res->code, 201, 'job created';
+
+    $res = get_jobs($cb, $queue_url."?worker_id=$worker_id");
+    is $res->code, 200, 'got job';
+
+    $res = workers_stats($cb);
+    is_deeply JSON::decode_json $res->content,
+      { workers_list => [qw/worker_foo/],
+        queue_name   => "presque_test",
+        processed    => 9,
+        failed       => 1,
+      },
+      'valid stats for queue';
+
+    # unreg.
+    $res = unreg_worker($cb);
+    is $res->code, 204, 'worker is unreg.';
 
     # purge queue
-    $req = HTTP::Request->new(DELETE => $queue_url);
-    $res = $cb->($req);
+    $res = purge_queue($cb);
     is $res->code, 204, 'queue purge';
+
+    # check purged
 };
+
+sub get_stats_from_queue {
+    my $cb = shift;
+    my $req = HTTP::Request->new(GET => $job_url);
+    ok my $res = $cb->($req), 'get info on an empty queue';
+    $res;
+}
+
+sub get_job {
+    my ($cb, $url) = @_;
+    $url ||= $queue_url;
+    my $req = HTTP::Request->new(GET => $queue_url);
+    ok my $res = $cb->($req), 'first request done';
+    $res;
+}
+
+sub get_jobs {
+    my $cb = shift;
+    my $req     = HTTP::Request->new(GET => $queue_batch_url);
+    ok my $res     = $cb->($req);
+    $res;
+}
+
+sub create_job {
+    my ($cb, $job, $url) = @_;
+    $url ||= $queue_url;
+    my $req = HTTP::Request->new(POST => $url);
+    $req->header('Content-Type' => 'application/json');
+    $req->content(JSON::encode_json($job));
+    ok my $res = $cb->($req);
+    $res;
+}
+
+sub create_jobs {
+    my ($cb, $jobs, $url) = @_;
+    $url ||= $queue_url;
+    my $req = HTTP::Request->new(POST => $queue_batch_url);
+    $req->header('Content-Type' => 'application/json');
+    $req->content(JSON::encode_json({jobs => $jobs}));
+    ok my $res = $cb->($req);
+    $res;
+}
+
+sub failed_job {
+    my ($cb, ) = @_;
+    my $req = HTTP::Request->new(PUT => $queue_url);
+    $req->header('Content-Type' => 'application/json');
+    $req->content(JSON::encode_json({foo => 1}));
+    ok my $res = $cb->($req), 'store a failed job';
+    $res;
+}
+
+sub control_queue {
+    my $cb = shift;
+    my $req = HTTP::Request->new(GET => $control_url);
+    ok my $res = $cb->($req);
+    $res;
+}
+
+sub change_queue_status {
+    my ($cb, $status) = @_;
+    my $req = HTTP::Request->new(POST => $control_url);
+    $req->content(JSON::encode_json({status => $status}));
+    ok my $res = $cb->($req);
+    $res;
+}
+
+sub queue_status {
+    my ($cb, ) = @_;
+    my $req = HTTP::Request->new(GET => $status_url);
+    ok my $res = $cb->($req);
+    $res;
+}
+
+sub workers_stats {
+    my ($cb, ) = @_;
+    my $req = HTTP::Request->new(GET => $worker_stats_url);
+    ok my $res = $cb->($req);
+    $res;
+}
+
+sub reg_worker {
+    my ($cb, ) = @_;
+    my $req = HTTP::Request->new(POST => $worker_url."$queue");
+    $req->content(JSON::encode_json({worker_id => $worker_id}));
+    $req->header('Content-Type' => 'application/json');
+    ok my $res = $cb->($req);
+    $res;
+}
+
+sub unreg_worker {
+    my ($cb, ) = @_;
+    my $req = HTTP::Request->new(DELETE => $worker_url."$queue?worker_id=$worker_id");
+    ok my $res = $cb->($req);
+    $res;
+}
+
+sub purge_queue {
+    my ($cb, ) = @_;
+    my $req = HTTP::Request->new(DELETE => $queue_url);
+    ok my $res = $cb->($req);
+    $res;
+}
 
 done_testing;
 
