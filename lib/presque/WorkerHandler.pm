@@ -32,8 +32,7 @@ sub get {
 sub post {
     my ($self, $queue_name) = @_;
 
-    my $content   = JSON::decode_json($self->request->content);
-    my $worker_id = $content->{worker_id};
+    my $worker_id = $self->request->header('X-presque-workerid');
 
     return $self->http_error('worker_id is missing') if !$worker_id;
 
@@ -50,8 +49,7 @@ sub post {
 sub delete {
     my ($self, $queue_name) = @_;
 
-    my $input     = $self->request->parameters;
-    my $worker_id = $input->{worker_id};
+    my $worker_id = $self->request->header('X-presque-workerid');
 
     return $self->http_error('worker_id is missing') unless $worker_id;
 
@@ -141,20 +139,20 @@ presque::WorkerHandler
 =head1 SYNOPSIS
 
     # fetch some informations about a worker
-    curl "http://localhost:5000/w/?worker_id=myworker_1" | json_xs -f json -t json-pretty
+    curl "http://localhost:5000/w/?worker_id=worker_1" | json_xs -f json -t json-pretty
 
     {
-        "worker_id" : "myworker_1",
+        "worker_id" : "worker_1",
         "started_at" : 1273923534,
         "processed" : "0",
         "failed" : "0"
     }
 
     # to register the worker "worker_1" on the queue "queuename"
-    curl -H 'Content-Type: appplication/json' http://localhost:5000/w/queuename -d '{"worker_id":"worker_1"}'
+    curl -H 'Content-Type: appplication/json' -H 'X-presque-workerid: worker_1' http://localhost:5000/w/queuename
 
     # to unreg a worker
-    curl -X DELETE "http://localhost:5000/w/foo?worker_id=myworker_1"
+    curl -X DELETE -H 'X-presque-workerid: worker_1' http://localhost:5000/w/queuename
 
 =head1 DESCRIPTION
 
@@ -190,9 +188,9 @@ If the query parameter is B<worker_id>, stats about this worker are returned. If
 
 /w/:queue_name
 
-=item request
+=item headers
 
-query : worker_id
+X-presque-workerid: worker's ID (optional)
 
 =item response
 
@@ -214,11 +212,9 @@ Register a worker on a queue.
 
 /w/:queue_name
 
-=item request
+=item headers
 
-content_type : application/json
-
-body : {"worker_id":"worker_1"}
+X-presque-workerid: worker's ID
 
 =item response
 
@@ -228,7 +224,7 @@ content : null
 
 =back
 
-To register a worker, a POST request must be made. The content of the POST must be a JSON structure that contains the key B<worker_id> (all other keys will be ignored).
+To register a worker, a POST request must be made. The header 'X-presque-workerid' must be set, and the value is the worker's ID.
 
 The HTTP response is 201, and no content is returned.
 
