@@ -64,7 +64,7 @@ sub _get_jobs_from_queue {
                         my $job = shift;
                         push @$keys, $value;
                         push @$jobs, $job;
-                        if (++$pos >= ($batch_size - 1)) {
+                        if (++$pos > ($batch_size - 1)) {
                             $self->_finish_get($queue_name, $jobs, $keys);
                         }
                         else {
