@@ -53,8 +53,6 @@ Return the current size of a queue
 
 /status/:queue_name
 
-=item request
-
 =item response
 
 content-type : application/json

@@ -96,8 +96,8 @@ sub _update_queue_stats {
 sub _update_worker_stats {
     my ($self, $queue_name, $jobs) = @_;
 
-    my $input     = $self->request->parameters;
-    my $worker_id = $input->{worker_id};
+    my $worker_id = $self->request->header('X-presque-workerid')
+      if $self->request->header('X-presque-workerid');
 
     if ($worker_id) {
         $self->application->redis->hincrby($self->_workers_processed,
@@ -155,10 +155,10 @@ presque::RestQueueBatchHandler - insert or fetch jobs in batch
 =head1 SYNOPSIS
 
     # insert a list of jobs
-    curl -H 'Content-Type: application/json' -X POST "http://localhost:5000/qb/foo" -d '{jobs:[{"key":"value"}, {"key2":"value2"}]}'
+    curl -H 'Content-Type: application/json' -H 'X-presque-workerid: worker_1' -X POST "http://localhost:5000/qb/foo" -d '{jobs:[{"key":"value"}, {"key2":"value2"}]}'
 
     # fetch some jobs
-    curl http://localhost:5000/qb/foo
+    curl -H 'X-presque-workerid: worker_1' http://localhost:5000/qb/foo
 
 =head1 DESCRIPTION
 
@@ -174,9 +174,13 @@ Insert of fetch jobs in batch.
 
 /qb/:queue_name
 
+=item headers
+
+X-presque-workerid: worker's ID (optional)
+
 =item request
 
-queue_name: [required] name of the queue to use
+queue_name: name of the queue to use (required)
 
 =item response
 
@@ -192,11 +196,15 @@ If the queue is closed: 404
 
 /qb/:queue_name
 
+=item headers
+
+content-type: application/json
+
+X-presque-workerid: worker's ID (optional)
+
 =item request
 
-queue_name: [required] name of the queue to use
-
-Content-Type: application/json
+queue_name: name of the queue to use (required)
 
 =item response
 

@@ -126,9 +126,11 @@ status of the queue: 1 or 0
 
 /control/:queue_name
 
-=item request
+=item headers
 
 content-type : application/json
+
+=item request
 
 content : {"status":"stop"}
 

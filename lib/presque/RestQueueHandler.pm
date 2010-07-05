@@ -133,8 +133,7 @@ sub _update_queue_stats {
 sub _update_worker_stats {
     my ($self, $queue_name) = @_;
 
-    my $input     = $self->request->parameters;
-    my $worker_id = $input->{worker_id};
+    my $worker_id = $self->request->header('X-presque-workerid');
 
     if ($worker_id) {
         $self->application->redis->hincrby($self->_workers_processed,
@@ -201,8 +200,8 @@ sub _insert_to_queue {
 sub _failed_job {
     my ($self, $queue_name) = @_;
 
-    my $input = $self->request->parameters;
-    my $worker_id = $input->{worker_id} if $input && $input->{worker_id};
+    my $worker_id = $self->request->header('X-presque-workerid')
+      if $self->request->header('X-presque-workerid');
 
     $self->application->redis->hincrby($self->_queue_failed, $queue_name, 1);
 
@@ -269,11 +268,13 @@ presque::RestQueueHandler
 
 /q/:queue_name
 
+=item headers
+
+X-presque-workerid: worker's ID (optional)
+
 =item request
 
-queue_name: [required] name of the queue to use
-
-worker_id: [optional] id of the worker, used for stats
+queue_name: name of the queue to use (required)
 
 =item response
 
@@ -297,23 +298,25 @@ If the queue is open, a job will be fetched from the queue and send to the clien
 
 /q/:queue_name
 
+=item headers
+
+content-type: application/json
+
+X-presque-workerid: worker's ID
+
 =item request
 
-content-type : application/json
+content: JSON object
 
-content : JSON object
+query: delayed, after which date (in epoch) this job should be run
 
-query : delayed, worker_id
-
-delayed : after which date (in epoch) this job should be run
-
-uniq : this job is uniq. The value is the string that will be used to determined if the job is uniq
+uniq: this job is uniq. The value is the string that will be used to determined if the job is uniq
 
 =item response
 
 code: 201
 
-content : null
+content: null
 
 =back
 
@@ -331,9 +334,9 @@ the B<delayed> value should be a date in epoch.
 
 /q/:queue_name
 
-=item request
+=item headers
 
-worker_id: [optional] id of the worker, used for stats
+X-presque-workerid: worker's id (optional)
 
 =item response
 
@@ -350,8 +353,6 @@ content: null
 =item path
 
 /q/:queue_name
-
-=item request
 
 =item response
 
