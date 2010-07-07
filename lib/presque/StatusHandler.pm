@@ -74,6 +74,10 @@ Return the current size of a queue
 
 =over 4
 
+=item request
+
+with_desc: if set to 1, will return the list of jobs and their content
+
 =item path
 
 /status/:queue_name

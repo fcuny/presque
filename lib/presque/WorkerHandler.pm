@@ -56,8 +56,8 @@ sub delete {
     $self->application->redis->srem($self->_workers_list, $worker_id);
     $self->application->redis->srem($self->_workers_on_queue($queue_name), $worker_id);
 
-    $self->application->redis->hdel($self->_workers_processed, $worker_id, 0);
-    $self->application->redis->hdel($self->_workers_failed,    $worker_id, 0);
+    $self->application->redis->hdel($self->_workers_processed, $worker_id);
+    $self->application->redis->hdel($self->_workers_failed,    $worker_id);
 
     $self->response->code(204);
     $self->finish();
