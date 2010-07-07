@@ -62,6 +62,7 @@ sub _get_jobs_from_queue {
                     $value,
                     sub {
                         my $job = shift;
+                        $self->application->redis->del($value);
                         push @$keys, $value;
                         push @$jobs, $job;
                         if (++$pos > ($batch_size - 1)) {

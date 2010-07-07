@@ -62,6 +62,7 @@ sub _get_job_from_delay_queue {
         $k,
         sub {
             my $job = shift;
+            $self->application->redis->del($k);
             $self->_finish_get($queue_name, $job, $k);
         }
     );
@@ -81,6 +82,7 @@ sub _get_job_from_queue {
                     $value,
                     sub {
                         my $job = shift;
+                        $self->application->redis->del($value);
                         $self->_finish_get($queue_name, $job, $value);
                     }
                 );
