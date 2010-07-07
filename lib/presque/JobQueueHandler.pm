@@ -14,12 +14,8 @@ __PACKAGE__->asynchronous(1);
 sub get {
     my ($self, $queue_name) = @_;
 
-    my $key       = $self->_queue($queue_name);
-    my $processed = $self->_queue_processed($queue_name);
-    my $failed    = $self->_queue_failed($queue_name);
-
     $self->application->redis->llen(
-        $key,
+        $self->_queue($queue_name),
         sub {
             my $size = shift;
             $self->application->redis->hget(
