@@ -14,12 +14,37 @@ sub get {
     my ($self, $queue_name) = @_;
 
     if ($queue_name) {
-        my $key = $self->_queue($queue_name);
+        my $input     = $self->request->parameters;
+        my $with_desc = ($input && $input->{with_desc}) ? 1 : 0;
+        my $key       = $self->_queue($queue_name);
         $self->application->redis->llen(
             $key,
             sub {
                 my $size = shift;
-                $self->entity({queue => $queue_name, size => $size});
+                if ($with_desc) {
+                    $self->application->redis->lrange(
+                        $self->_queue($queue_name),
+                        0, $size,
+                        sub {
+                            my $jobs = shift;
+                            $self->application->redis->mget(
+                                @$jobs,
+                                sub {
+                                    my $full_jobs = shift;
+                                    $self->entity(
+                                        {   queue => $queue_name,
+                                            size  => $size,
+                                            jobs  => $full_jobs,
+                                        }
+                                    );
+                                }
+                            );
+                        }
+                    );
+                }
+                else {
+                    $self->entity({queue => $queue_name, size => $size});
+                }
             }
         );
     }
