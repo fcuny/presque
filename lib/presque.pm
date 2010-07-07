@@ -6,7 +6,17 @@ use AnyEvent::Redis;
 use Moose;
 extends 'Tatsumaki::Application';
 
-has config => (is => 'rw', isa => 'HashRef', lazy => 1, default => sub { });
+has config => (
+    is      => 'rw',
+    isa     => 'HashRef',
+    lazy    => 1,
+    default => sub {
+        redis => {
+            host => 'localhost',
+            port => 6379,
+        },
+    }
+);
 
 has redis => (
     is      => 'rw',
