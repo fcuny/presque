@@ -22,6 +22,12 @@ sub _fetch_job {
 
     my $lkey = $self->_queue($queue_name);
 
+    $self->_get_jobs_from_queue($queue_name, $lkey, $pos, $batch_size, $jobs, $keys);
+}
+
+sub _get_jobs_from_queue {
+    my ($self, $queue_name, $lkey, $pos, $batch_size, $jobs, $keys) = @_;
+
     $self->application->redis->lpop(
         $lkey,
         sub {
@@ -39,7 +45,7 @@ sub _fetch_job {
                         }
                         else {
                             $self->_get_jobs_from_queue(
-                                $queue_name, $pos, $batch_size,
+                                $queue_name, $lkey, $pos, $batch_size,
                                 $jobs,       $keys
                             );
                         }
