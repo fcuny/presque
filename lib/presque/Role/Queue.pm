@@ -4,7 +4,7 @@ use Moose::Role;
 
 sub new_queue {
     my ($self, $queue_name, $lkey) = @_;
-    $self->application->redis->sadd('QUEUESET', $lkey);
+    $self->application->redis->sadd('QUEUESET', $queue_name);
     my $ckey = $self->_queue_stat($queue_name);
     $self->application->redis->set($ckey, 1);
 }

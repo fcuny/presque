@@ -12,44 +12,13 @@ sub delete { (shift)->htttp_error('DELETE is not supported in batch mode'); }
 sub _fetch_job {
     my ($self, $queue_name) = @_;
 
-    my $dkey = $self->_queue_delayed($queue_name);
-
     my $input = $self->request->parameters;
     my $batch_size =
       ($input && $input->{batch_size}) ? $input->{batch_size} : 10;
 
-    $self->application->redis->zrangebyscore(
-        $dkey, 0, time,
-        sub {
-            my $values = shift;
-            if ($values && scalar @$values) {
-                $self->_get_jobs_from_delay_queue($queue_name, $dkey, $values, $batch_size);
-            }
-            else {
-                $self->_get_jobs_from_queue($queue_name, 0, $batch_size, [], []);
-            }
-        }
-    );
-}
-
-sub _get_jobs_from_delay_queue {
-    my ($self, $queue_name, $dkey, $values, $batch_size) = @_;
-
-    my @keys = @$values[0 .. ($batch_size - 1)];
-    foreach (@keys) {
-        $self->application->redis->zrem($dkey, $_);
-    }
-    $self->application->redis->mget(
-        @keys,
-        sub {
-            my $jobs = shift;
-            $self->_finish_get($queue_name, $jobs, \@keys);
-        }
-    );
-}
-
-sub _get_jobs_from_queue {
-    my ($self, $queue_name, $pos, $batch_size, $jobs, $keys) = @_;
+    my $jobs = [];
+    my $keys = [];
+    my $pos  = 0;
 
     my $lkey = $self->_queue($queue_name);
 
