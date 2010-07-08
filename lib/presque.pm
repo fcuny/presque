@@ -6,6 +6,8 @@ use AnyEvent::Redis;
 use Moose;
 extends 'Tatsumaki::Application';
 
+use presque::Service;
+
 has config => (
     is      => 'rw',
     isa     => 'HashRef',
@@ -49,8 +51,8 @@ sub app {
             '/'             => h('presque::IndexHandler'),
         ]
     );
-
     $self->config(delete $args{config});
+    $self->add_service(presque::Service->new(redis => $self->redis));
     $self;
 }
 
