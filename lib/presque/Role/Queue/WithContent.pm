@@ -19,8 +19,8 @@ role {
 
             return $self->http_error_content_type
               if (!$self->request->header('Content-Type')
-                || $self->request->header('Content-Type') ne
-                'application/json');
+                || $self->request->header('Content-Type') !~
+                m!application/json! );
 
             return $self->http_error("job is missing")
               if !$self->request->content;
