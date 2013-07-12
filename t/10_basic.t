@@ -39,7 +39,7 @@ test_psgi $app, sub {
     is_deeply JSON::decode_json $res->content,
       { job_processed => 0,
         job_count     => 0,
-        queue_name    => $queue,
+        queue_name    => 'presque_test',
         job_failed    => 0,
       },
       'good job info result';
@@ -61,7 +61,7 @@ test_psgi $app, sub {
       { job_count     => 1,
         job_failed    => 0,
         job_processed => 0,
-        queue_name    => $queue,
+        queue_name    => 'presque_test',
       },
       'valid jobs info';
 
@@ -142,7 +142,7 @@ test_psgi $app, sub {
     $res = workers_stats($cb);
     is_deeply JSON::decode_json $res->content,
       { workers_list => [],
-        queue_name   => "presque_test",
+        queue_name   => 'presque_test',
         processed    => 7,
         failed       => 1,
       },
@@ -157,13 +157,13 @@ test_psgi $app, sub {
     $res = create_job($cb, $job, $queue_url);
     is $res->code, 201, 'job created';
 
-    $res = get_jobs($cb, $queue_url);
+    $res = get_jobs($cb);
     is $res->code, 200, 'got job';
 
     $res = workers_stats($cb);
     is_deeply JSON::decode_json $res->content,
       { workers_list => [qw/worker_foo/],
-        queue_name   => "presque_test",
+        queue_name   => 'presque_test',
         processed    => 9,
         failed       => 1,
       },
@@ -181,8 +181,9 @@ test_psgi $app, sub {
 };
 
 sub get_stats_from_queue {
-    my $cb = shift;
-    my $req = HTTP::Request->new(GET => $job_url);
+    my ($cb, $url) = @_;
+    $url ||= $job_url;
+    my $req = HTTP::Request->new(GET => $url);
     ok my $res = $cb->($req), 'get info on an empty queue';
     $res;
 }
@@ -190,14 +191,15 @@ sub get_stats_from_queue {
 sub get_job {
     my ($cb, $url) = @_;
     $url ||= $queue_url;
-    my $req = HTTP::Request->new(GET => $queue_url);
+    my $req = HTTP::Request->new(GET => $url);
     ok my $res = $cb->($req), 'first request done';
     $res;
 }
 
 sub get_jobs {
-    my $cb = shift;
-    my $req = HTTP::Request->new(GET => $queue_batch_url);
+    my ($cb, $url) = @_;
+    $url ||= $queue_batch_url;
+    my $req = HTTP::Request->new(GET => $url);
     $req->header('X-presque-workerid' => $worker_id);
     ok my $res = $cb->($req);
     $res;
@@ -216,8 +218,8 @@ sub create_job {
 
 sub create_jobs {
     my ($cb, $jobs, $url) = @_;
-    $url ||= $queue_url;
-    my $req = HTTP::Request->new(POST => $queue_batch_url);
+    $url ||= $queue_batch_url;
+    my $req = HTTP::Request->new(POST => $url);
     $req->header('Content-Type' => 'application/json');
     $req->content(JSON::encode_json({jobs => $jobs}));
     ok my $res = $cb->($req);
@@ -225,8 +227,9 @@ sub create_jobs {
 }
 
 sub failed_job {
-    my ($cb, ) = @_;
-    my $req = HTTP::Request->new(PUT => $queue_url);
+    my ($cb, $url) = @_;
+    $url ||= $queue_url;
+    my $req = HTTP::Request->new(PUT => $url);
     $req->header('Content-Type' => 'application/json');
     $req->content(JSON::encode_json({foo => 1}));
     ok my $res = $cb->($req), 'store a failed job';
@@ -234,36 +237,40 @@ sub failed_job {
 }
 
 sub control_queue {
-    my $cb = shift;
-    my $req = HTTP::Request->new(GET => $control_url);
+    my ($cb, $url) = @_;
+    $url ||= $control_url;
+    my $req = HTTP::Request->new(GET => $url);
     ok my $res = $cb->($req);
     $res;
 }
 
 sub change_queue_status {
-    my ($cb, $status) = @_;
-    my $req = HTTP::Request->new(POST => $control_url);
+    my ($cb, $status, $url) = @_;
+    $url ||= $control_url;
+    my $req = HTTP::Request->new(POST => $url);
     $req->content(JSON::encode_json({status => $status}));
     ok my $res = $cb->($req);
     $res;
 }
 
 sub queue_status {
-    my ($cb, ) = @_;
-    my $req = HTTP::Request->new(GET => $status_url);
+    my ($cb, $url) = @_;
+    $url ||= $status_url;
+    my $req = HTTP::Request->new(GET => $url);
     ok my $res = $cb->($req);
     $res;
 }
 
 sub workers_stats {
-    my ($cb, ) = @_;
-    my $req = HTTP::Request->new(GET => $worker_stats_url);
+    my ($cb, $url ) = @_;
+    $url ||= $worker_stats_url;
+    my $req = HTTP::Request->new(GET => $url);
     ok my $res = $cb->($req);
     $res;
 }
 
 sub reg_worker {
-    my ($cb,) = @_;
+    my ($cb) = @_;
     my $req = HTTP::Request->new(POST => $worker_url . "$queue");
     $req->header('Content-Type'       => 'application/json');
     $req->header('X-presque-workerid' => $worker_id);
@@ -272,16 +279,17 @@ sub reg_worker {
 }
 
 sub unreg_worker {
-    my ($cb, ) = @_;
-    my $req = HTTP::Request->new(DELETE => $worker_url.$queue);
+    my ($cb) = @_;
+    my $req = HTTP::Request->new(DELETE => $worker_url . "$queue");
     $req->header('X-presque-workerid' => $worker_id);
     ok my $res = $cb->($req);
     $res;
 }
 
 sub purge_queue {
-    my ($cb, ) = @_;
-    my $req = HTTP::Request->new(DELETE => $queue_url);
+    my ($cb, $url) = @_;
+    $url ||= $queue_url;
+    my $req = HTTP::Request->new(DELETE => $url);
     ok my $res = $cb->($req);
     $res;
 }
